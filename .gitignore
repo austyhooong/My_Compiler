@@ -7,4 +7,5 @@
 *.vscode
 *.dSYM*
 *.txt
+main
 /austins_compiler
