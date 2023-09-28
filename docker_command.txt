@@ -1,7 +1,0 @@
-docker run --rm : close the container once the command completes
-
-docker run -v <source>:<dest> -w <dest>
--w : set source as the current directory to be run within container
-
-ex:
-docker run --rm -v $MY:/austin_compiler -w /austin_compiler compilerbook_x86_64 make test
