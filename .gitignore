@@ -6,4 +6,5 @@
 /tmp*
 **/.vscode
 **/*.dSYM*
+**/*.txt
 /austins_compiler
