@@ -4,7 +4,7 @@
 **/*.s
 **/a.out
 /tmp*
-**/.vscode
-**/*.dSYM*
-**/*.txt
+*/.vscode
+*.dSYM*
+*.txt
 /austins_compiler
