@@ -21,6 +21,10 @@ typedef enum
     ND_DIV,
     ND_NUM,
     ND_NEG, // unary "-"
+    ND_EQ,  // ==
+    ND_NE,
+    ND_LT,
+    ND_LE,
 } NodeKind;
 
 typedef struct Token Token;
@@ -99,10 +103,23 @@ static Token *new_token(TokenKind kind, char *start, char *end)
     return tok;
 }
 
-bool is_operator(char *op)
+// bool is_operator(char *op)
+// {
+//     return *op == '<' || *op == '>' || *op == '+' || *op == '-' || *op == '/' || *op == '*' || *op == '(' || *op == ')';
+// }
+
+static bool start_with(char *p, char *q)
 {
-    return *op == '+' || *op == '-' || *op == '/' || *op == '*' || *op == '(' || *op == ')';
+    return strncmp(p, q, strlen(q)) == 0;
 }
+
+static int read_op(char *p)
+{
+    if (start_with(p, "==") || start_with(p, "<=") || start_with(p, "!=") || start_with(p, ">="))
+        return 2;
+    return ispunct(*p) ? 1 : 0;
+}
+
 static Token *tokenize(void)
 {
     char *p = current_input;
@@ -111,6 +128,7 @@ static Token *tokenize(void)
 
     while (*p)
     {
+        int op_len = read_op(p);
         if (isspace(*p))
             ++p;
         else if (isdigit(*p))
@@ -120,10 +138,10 @@ static Token *tokenize(void)
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
         }
-        else if (is_operator(p))
+        else if (op_len)
         {
-            cur = cur->next = new_token(TK_OPERATOR, p, p + 1);
-            ++p;
+            cur = cur->next = new_token(TK_OPERATOR, p, p + op_len);
+            p += cur->len;
         }
         else
         {
@@ -174,12 +192,64 @@ static Node *new_num(int val)
 }
 
 static Node *expr(Token **rest, Token *tok);
+static Node *equality(Token **rest, Token *tok);
+static Node *relational(Token **rest, Token *tok);
+static Node *add(Token **rest, Token *tok);
 static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 
-// expr = mul ("+" mul | "-" mul)*
+// expr = equality
 static Node *expr(Token **rest, Token *tok)
+{
+    return equality(rest, tok);
+}
+static Node *equality(Token **rest, Token *tok)
+{
+    Node *node = relational(&tok, tok);
+
+    while (true)
+    {
+        if (equal(tok, "=="))
+        {
+            node = new_binary(ND_EQ, node, relational(&tok, tok->next));
+        }
+        else if (equal(tok, "!="))
+        {
+            node = new_binary(ND_NE, node, relational(&tok, tok->next));
+        }
+        *rest = tok;
+        return node;
+    }
+}
+
+static Node *relational(Token **rest, Token *tok)
+{
+    Node *node = add(&tok, tok);
+    while (true)
+    {
+        if (equal(tok, "<"))
+        {
+            node = new_binary(ND_LT, node, add(&tok, tok->next));
+        }
+        else if (equal(tok, "<="))
+        {
+            node = new_binary(ND_LE, node, add(&tok, tok->next));
+        }
+        else if (equal(tok, ">"))
+        {
+            node = new_binary(ND_LT, add(&tok, tok->next), node);
+        }
+        else if (equal(tok, ">="))
+        {
+            node = new_binary(ND_LE, node, add(&tok, tok->next));
+        }
+        *rest = tok;
+        return node;
+    }
+}
+
+static Node *add(Token **rest, Token *tok)
 {
     Node *node = mul(&tok, tok);
     while (true)
@@ -298,6 +368,21 @@ static void gen_expr(Node *node)
     case ND_DIV:
         printf("    cqo\n");        // extend RAX to 128 bits by setting it in RDX and RAX
         printf("    idiv %%rdi\n"); // implicitly combine RDX and RAX as 128 bits
+        return;
+    case ND_EQ:
+    case ND_NE:
+    case ND_LT:
+    case ND_LE:
+        printf("    cmp %%rdi, %%rax\n");
+        if (node->kind == ND_EQ)
+            printf("    sete %%al\n");
+        else if (node->kind == ND_NE)
+            printf("    setne %%al\n");
+        else if (node->kind == ND_LT)
+            printf("    setl %%al\n");
+        else if (node->kind == ND_LE)
+            printf("    setle %%al\n");
+        printf("    movzb %%al, %%rax\n");
         return;
     }
     error("invalide expression");
