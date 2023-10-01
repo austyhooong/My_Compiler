@@ -21,10 +21,13 @@ CC=gcc
 au_cc: main.o
 	$(CC) -o au_cc main.o $(LDFLAGS)
 
-test: au_cc
+test: clean au_cc
 	./test.sh
 
+docker:
+	docker run --rm -v ${MY}:/austin_compiler -w /austin_compiler compilerbook_x86_64 make test
+
 clean:
-	rm -f au_cc *.o *~ tmp*
+	rm -f au_cc *.o *~ tmp* *.out main
 
 .PHONY: test clean
