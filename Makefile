@@ -2,6 +2,7 @@
 
 # target: dependencies
 #	action
+# -target is usually the name of a file (executable/object files) or an action
 # if target is more outdated than dependencies, make starts off with dependenciese; if they have the rule, these are executed first 
 
 # library path is needed for the linker to link the libary into an executable; both of below are needed for linking
@@ -16,6 +17,7 @@ $^: the filenames of all the prerequisites, separated by spaces, discard duplica
 $+: similar to $^, but includes duplicates. \
 $?: the names of all prerequisites that are newer than the target, separated by spaces.
 
+# .c file is implicitly converted to .o file; no need make a rule
 CFLAGS=-std=c11 -g -fno-common
 CC=gcc
 #expand by space separated result

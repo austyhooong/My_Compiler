@@ -100,6 +100,11 @@ Token *tokenize(char *p)
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
         }
+        else if ('a' <= *p && *p <= 'z')
+        {
+            cur = cur->next = new_token(TK_IDENT, p, p + 1);
+            ++p;
+        }
         else if (op_len)
         {
             cur = cur->next = new_token(TK_OPERATOR, p, p + op_len);
