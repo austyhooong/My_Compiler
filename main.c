@@ -8,7 +8,7 @@ int main(int argc, char **argv)
     // printf("    mov $%ld, %%rax\n", get_number(tok)); // strtol converts the beginning of operations into long int and stores the rest of them in &operations)
 
     Token *tok = tokenize(argv[1]);
-    Node *node = parse(tok);
-    codegen(node);
+    Function *prog = parse(tok);
+    codegen(prog);
     return 0;
 }

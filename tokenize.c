@@ -75,6 +75,16 @@ static bool start_with(char *p, char *q)
     return strncmp(p, q, strlen(q)) == 0;
 }
 
+static bool is_ident_letter(char c)
+{
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+static bool is_ident_nonletter(char c)
+{
+    return is_ident_letter(c) || ('0' <= c && c <= '9');
+}
+
 static int read_op(char *p)
 {
     if (start_with(p, "==") || start_with(p, "<=") || start_with(p, "!=") || start_with(p, ">="))
@@ -100,10 +110,14 @@ Token *tokenize(char *p)
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
         }
-        else if ('a' <= *p && *p <= 'z')
+        else if (is_ident_letter(*p))
         {
-            cur = cur->next = new_token(TK_IDENT, p, p + 1);
-            ++p;
+            char *start = p;
+            do
+            {
+                ++p;
+            } while (is_ident_nonletter(*p));
+            cur = cur->next = new_token(TK_IDENT, start, p);
         }
         else if (op_len)
         {

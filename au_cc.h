@@ -34,6 +34,24 @@ Token *skip(Token *tok, char *op);
 Token *tokenize(char *input);
 
 // parse.c
+typedef struct Node Node;
+typedef struct Obj Obj;
+struct Obj
+{
+    Obj *next;
+    char *name; // variable name
+    int offset; // offset from RBP
+};
+
+// Function
+typedef struct Function Function;
+struct Function
+{
+    Node *body;
+    Obj *locals; // local variables
+    int stack_size;
+};
+
 typedef enum
 {
     ND_ADD,
@@ -52,7 +70,6 @@ typedef enum
 } NodeKind;
 
 // abstract syntax tree
-typedef struct Node Node;
 struct Node
 {
     NodeKind kind;
@@ -60,10 +77,10 @@ struct Node
     Node *lhs;
     Node *rhs;
     int val;
-    char name; // for kind == ND_VAR
+    Obj *var; // kind == ND_VAR
 };
 
-Node *parse(Token *tok);
+Function *parse(Token *tok);
 
 // codegen.c
-void codegen(Node *node);
+void codegen(Function *prog);
