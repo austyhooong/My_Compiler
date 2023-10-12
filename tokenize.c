@@ -92,6 +92,9 @@ static int read_op(char *p)
     return ispunct(*p) ? 1 : 0;
 }
 
+static void convert_keywords(Token *tok)
+{
+}
 Token *tokenize(char *p)
 {
     current_input = p;
@@ -110,12 +113,13 @@ Token *tokenize(char *p)
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
         }
+        // identifier | keyword
         else if (is_ident_letter(*p))
         {
             char *start = p;
             do
             {
-                ++p;
+                ++p;    
             } while (is_ident_nonletter(*p));
             cur = cur->next = new_token(TK_IDENT, start, p);
         }

@@ -14,6 +14,7 @@ typedef enum
     TK_IDENT, // identifier
     TK_NUM,
     TK_EOF,
+    TK_KEYWORD,
 } TokenKind;
 
 typedef struct Token Token;
@@ -67,6 +68,7 @@ typedef enum
     ND_ASSIGN,    // =
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
+    ND_RETURN,
 } NodeKind;
 
 // abstract syntax tree
