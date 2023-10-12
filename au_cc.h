@@ -69,6 +69,7 @@ typedef enum
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
+    ND_BLOCK, // {...}
 } NodeKind;
 
 // abstract syntax tree
@@ -79,7 +80,8 @@ struct Node
     Node *lhs;
     Node *rhs;
     int val;
-    Obj *var; // kind == ND_VAR
+    Obj *var;   // kind == ND_VAR
+    Node *body; // kind == ND_BLOCK
 };
 
 Function *parse(Token *tok);
