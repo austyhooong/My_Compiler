@@ -92,9 +92,27 @@ static int read_op(char *p)
     return ispunct(*p) ? 1 : 0;
 }
 
+static bool is_keyword(Token *tok)
+{
+    static char *kw[] = {"return", "if", "else"};
+
+    for (int i = 0; i < sizeof(kw) / sizeof(*kw); ++i)
+    {
+        if (equal(tok, kw[i]))
+            return true;
+    }
+    return false;
+}
+
 static void convert_keywords(Token *tok)
 {
+    for (Token *t = tok; t->kind != TK_EOF; t = t->next)
+    {
+        if (is_keyword(t))
+            t->kind = TK_KEYWORD;
+    }
 }
+
 Token *tokenize(char *p)
 {
     current_input = p;
@@ -119,7 +137,7 @@ Token *tokenize(char *p)
             char *start = p;
             do
             {
-                ++p;    
+                ++p;
             } while (is_ident_nonletter(*p));
             cur = cur->next = new_token(TK_IDENT, start, p);
         }

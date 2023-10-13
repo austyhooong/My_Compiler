@@ -63,5 +63,10 @@ assert 3 '{ {1; {2;} return 3;} }'
 
 assert 5 '{; ; ; return 5; ;}'
 
+assert 4 '{if (0) return 2; return 4;}'
+assert 4 '{if (1) return 4; return 2;}'
+assert 4 '{if (1) {1; 2; 3; return 4;} else {return 2;}}'
+assert 4 '{if (0) {return 2;} else {return 4;}}'
+
 echo Good Job!
 

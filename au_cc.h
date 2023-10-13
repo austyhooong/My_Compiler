@@ -70,6 +70,7 @@ typedef enum
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
     ND_BLOCK, // {...}
+    ND_IF,    // if statement
 } NodeKind;
 
 // abstract syntax tree
@@ -82,6 +83,11 @@ struct Node
     int val;
     Obj *var;   // kind == ND_VAR
     Node *body; // kind == ND_BLOCK
+
+    // if statement
+    Node *cond;
+    Node *then;
+    Node *els;
 };
 
 Function *parse(Token *tok);
