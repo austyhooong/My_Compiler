@@ -39,7 +39,7 @@ static void gen_addr(Node *node)
         return;
     }
 
-    error("not an lvalue");
+    error_tok(node->tok, "not an lvalue");
 }
 
 static void gen_expr(Node *node)
@@ -102,7 +102,7 @@ static void gen_expr(Node *node)
         printf("    movzb %%al, %%rax\n");
         return;
     }
-    error("invalide expression");
+    error_tok(node->tok, "invalide expression");
 }
 
 static void gen_stmt(Node *node)
@@ -157,7 +157,7 @@ static void gen_stmt(Node *node)
         return;
     }
 
-    error("invalid statement");
+    error_tok(node->tok, "invalid statement");
 }
 
 static void assign_lvar_offsets(Function *prog)
