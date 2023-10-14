@@ -72,5 +72,11 @@ assert 55 '{i = 0; j = 0; for (i = 0; i <= 10; i = i + 1) j = i + j; return j;}'
 assert 5 '{ for (;;) {return 5;} return 3; }'
 
 assert 10 '{ i = 0; while (i < 10) {i = i + 1;} return i; }'
+
+assert 4 '{ x = 4; return *&x;}'
+assert 5 '{x = 3; y = 5; return *(&x + 8); }'
+assert 5 '{x = 3; y = &x; *y = 5; return x;}'
+assert 7 '{x = 5; y = 1; *(&x + 8) = 7; return y;}'
+assert 7 '{x = 3; y = 5; *(&y - 8) = 7; return x;}'
 echo Good Job!
 

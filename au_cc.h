@@ -66,6 +66,8 @@ typedef enum
     ND_LT,
     ND_LE,
     ND_ASSIGN,    // =
+    ND_ADDR,      // address &
+    ND_DEREF,     // dereference *
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
