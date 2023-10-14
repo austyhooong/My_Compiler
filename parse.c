@@ -82,7 +82,9 @@ static Obj *new_lvar(char *name)
     locals = var;
     return var;
 }
-// stmt = "return" expr ";" | expr-stmt | "{" compound-stmt
+// stmt = "return" expr ";"
+//     || "if" "(" expr ")" stmt "else" stmt
+//     || "for" "(" expr-stmt ";" expr? ";" expr? ")" stmt
 static Node *stmt(Token **rest, Token *tok)
 {
     if (equal(tok, "return"))
@@ -105,6 +107,28 @@ static Node *stmt(Token **rest, Token *tok)
         *rest = tok;
         return node;
     }
+    if (equal(tok, "for"))
+    {
+        Node *node = new_node(ND_FOR);
+        tok = skip(tok->next, "(");
+
+        node->init = expr_stmt(&tok, tok); // expr with ";" at the end
+
+        if (!equal(tok, ";"))
+        {
+            node->cond = expr(&tok, tok);
+        }
+        tok = skip(tok, ";");
+
+        if (!equal(tok, ")"))
+        {
+            node->inc = expr(&tok, tok);
+        }
+        tok = skip(tok, ")");
+
+        node->then = stmt(rest, tok);
+        return node;
+    }
     if (equal(tok, "{"))
         return compound_stmt(rest, tok->next);
     return expr_stmt(rest, tok);
@@ -124,7 +148,7 @@ static Node *compound_stmt(Token **rest, Token *tok)
     return node;
 }
 
-// expr - stmt = expr ? ";"
+// expr-stmt = expr ? ";"
 static Node *expr_stmt(Token **rest, Token *tok)
 {
     if (equal(tok, ";"))

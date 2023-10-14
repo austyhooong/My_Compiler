@@ -71,6 +71,7 @@ typedef enum
     ND_RETURN,
     ND_BLOCK, // {...}
     ND_IF,    // if statement
+    ND_FOR,   // for statement
 } NodeKind;
 
 // abstract syntax tree
@@ -84,10 +85,12 @@ struct Node
     Obj *var;   // kind == ND_VAR
     Node *body; // kind == ND_BLOCK
 
-    // if statement
+    // if || for statement
     Node *cond;
     Node *then;
     Node *els;
+    Node *init;
+    Node *inc;
 };
 
 Function *parse(Token *tok);

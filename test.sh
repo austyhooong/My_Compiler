@@ -68,5 +68,7 @@ assert 4 '{if (1) return 4; return 2;}'
 assert 4 '{if (1) {1; 2; 3; return 4;} else {return 2;}}'
 assert 4 '{if (0) {return 2;} else {return 4;}}'
 
+assert 55 '{i = 0; j = 0; for (i = 0; i <= 10; i = i + 1) j = i + j; return j;}'
+assert 5 '{ for (;;) {return 5;} return 3; }'
 echo Good Job!
 
