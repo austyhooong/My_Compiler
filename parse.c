@@ -129,6 +129,16 @@ static Node *stmt(Token **rest, Token *tok)
         node->then = stmt(rest, tok);
         return node;
     }
+    if (equal(tok, "while"))
+    {
+        Node *node = new_node(ND_FOR);
+        tok = skip(tok->next, "(");
+        node->cond = expr(&tok, tok);
+        tok = skip(tok, ")");
+        node->then = stmt(rest, tok);
+        return node;
+    }
+
     if (equal(tok, "{"))
         return compound_stmt(rest, tok->next);
     return expr_stmt(rest, tok);

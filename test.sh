@@ -70,5 +70,7 @@ assert 4 '{if (0) {return 2;} else {return 4;}}'
 
 assert 55 '{i = 0; j = 0; for (i = 0; i <= 10; i = i + 1) j = i + j; return j;}'
 assert 5 '{ for (;;) {return 5;} return 3; }'
+
+assert 10 '{ i = 0; while (i < 10) {i = i + 1;} return i; }'
 echo Good Job!
 

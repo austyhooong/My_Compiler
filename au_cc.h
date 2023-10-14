@@ -71,7 +71,7 @@ typedef enum
     ND_RETURN,
     ND_BLOCK, // {...}
     ND_IF,    // if statement
-    ND_FOR,   // for statement
+    ND_FOR,   // for || while statement
 } NodeKind;
 
 // abstract syntax tree
