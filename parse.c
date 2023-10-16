@@ -11,6 +11,8 @@ A?: A or null
 A | B: A or B
 
 
+This file contains recursive descent parser for C.
+since C does not allow returning more than one value, only the current node is returned and remaining part of the input tokens are returned via pointer through the input argument
 */
 
 #include "au_cc.h"
@@ -19,6 +21,7 @@ A | B: A or B
 Obj *locals;
 
 static Node *compound_stmt(Token **rest, Token *tok);
+static Node *stmt(Token **rest, Token *tok);
 static Node *expr_stmt(Token **rest, Token *tok);
 static Node *expr(Token **rest, Token *tok);
 static Node *assign(Token **rest, Token *tok);
@@ -154,6 +157,7 @@ static Node *compound_stmt(Token **rest, Token *tok)
     while (!equal(tok, "}"))
     {
         cur = cur->next = stmt(&tok, tok);
+        add_type(cur);
     }
     node->body = head.next;
     *rest = tok->next;
@@ -238,6 +242,63 @@ static Node *relational(Token **rest, Token *tok)
     }
 }
 
+// Within C, "+" is overloaded to perform the pointer arithmetic.
+// If P is a pointer, p + n, n * (sizeof(*p)) is added instead
+// Following function accomodates for the above distinction
+static Node *new_add(Node *lhs, Node *rhs, Token *tok)
+{
+    add_type(lhs);
+    add_type(rhs);
+
+    if (is_integer(lhs->ty) && is_integer(rhs->ty))
+    {
+        return new_binary(ND_ADD, lhs, rhs, tok);
+    }
+    if (lhs->ty->base && rhs->ty->base)
+    {
+        error_tok(tok, "invalid operands");
+    }
+    // num + ptr => ptr + num
+    if (!lhs->ty->base && rhs->ty->base)
+    {
+        Node *tmp = lhs;
+        lhs = rhs;
+        rhs = tmp;
+    }
+
+    // ptr + (num * sizeof(*ptr))
+    rhs = new_binary(ND_MUL, rhs, new_num(8, tok), tok);
+    return new_binary(ND_ADD, lhs, rhs, tok);
+}
+
+static Node *new_sub(Node *lhs, Node *rhs, Token *tok)
+{
+    add_type(lhs);
+    add_type(rhs);
+
+    if (is_integer(lhs->ty) && is_integer(rhs->ty))
+        return new_binary(ND_SUB, lhs, rhs, tok);
+
+    // ptr - num
+    if (lhs->ty->base && is_integer(rhs->ty))
+    {
+        rhs = new_binary(ND_MUL, rhs, new_num(8, tok), tok);
+        add_type(rhs);
+        Node *node = new_binary(ND_SUB, lhs, rhs, tok);
+        node->ty = lhs->ty;
+        return node;
+    }
+
+    // ptr - ptr
+    if (lhs->ty->base && rhs->ty->base)
+    {
+        Node *node = new_binary(ND_SUB, lhs, rhs, tok);
+        node->ty = ty_int;
+        return new_binary(ND_DIV, node, new_num(8, tok), tok);
+    }
+
+    error_tok(tok, "invalid operands");
+}
 static Node *add(Token **rest, Token *tok)
 {
     Node *node = mul(&tok, tok);
@@ -246,12 +307,12 @@ static Node *add(Token **rest, Token *tok)
         Token *start = tok;
         if (equal(tok, "+"))
         {
-            node = new_binary(ND_ADD, node, mul(&tok, tok->next), start);
+            node = new_add(node, mul(&tok, tok->next), start);
             continue;
         }
         else if (equal(tok, "-"))
         {
-            node = new_binary(ND_SUB, node, mul(&tok, tok->next), start);
+            node = new_sub(node, mul(&tok, tok->next), start);
             continue;
         }
         *rest = tok;

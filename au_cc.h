@@ -17,6 +17,7 @@ typedef enum
     TK_KEYWORD,
 } TokenKind;
 
+typedef struct Type Type;
 typedef struct Token Token;
 struct Token
 {
@@ -81,6 +82,7 @@ struct Node
 {
     NodeKind kind;
     Node *next;
+    Type *ty;   // Type: value or pointer
     Token *tok; // representative token
     Node *lhs;
     Node *rhs;
@@ -97,6 +99,23 @@ struct Node
 };
 
 Function *parse(Token *tok);
+
+// type.c
+typedef enum
+{
+    TY_INT,
+    TY_PTR,
+} TypeKind;
+
+struct Type
+{
+    TypeKind kind;
+    Type *base;
+};
+
+extern Type *ty_int;
+bool is_integer(Type *ty);
+void add_type(Node *node);
 
 // codegen.c
 void codegen(Function *prog);
