@@ -95,6 +95,7 @@ struct Node
     Node *body; // kind == ND_BLOCK
 
     char *funcname; // function call
+    Node *args;
 
     // if || for statement
     Node *cond;
