@@ -33,7 +33,9 @@ void error_at(char *loc, char *fmt, ...);
 void error_tok(Token *tok, char *fmt, ...);
 bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
-Token *tokenize(char *input);
+bool consume(Token **rest, Token *tok, char *str);
+Token *
+tokenize(char *input);
 
 // parse.c
 typedef struct Node Node;
@@ -42,6 +44,7 @@ struct Obj
 {
     Obj *next;
     char *name; // variable name
+    Type *ty;
     int offset; // offset from RBP
 };
 
@@ -72,9 +75,10 @@ typedef enum
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
-    ND_BLOCK, // {...}
-    ND_IF,    // if statement
-    ND_FOR,   // for || while statement
+    ND_BLOCK,   // {...}
+    ND_IF,      // if statement
+    ND_FOR,     // for || while statement
+    ND_FUNCALL, // function call
 } NodeKind;
 
 // abstract syntax tree
@@ -89,6 +93,8 @@ struct Node
     int val;
     Obj *var;   // kind == ND_VAR
     Node *body; // kind == ND_BLOCK
+
+    char *funcname; // function call
 
     // if || for statement
     Node *cond;
@@ -110,12 +116,18 @@ typedef enum
 struct Type
 {
     TypeKind kind;
+
+    // pointer
     Type *base;
+
+    // declaration
+    Token *name;
 };
 
 extern Type *ty_int;
 bool is_integer(Type *ty);
 void add_type(Node *node);
+Type *pointer_to(Type *base);
 
 // codegen.c
 void codegen(Function *prog);

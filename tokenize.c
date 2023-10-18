@@ -49,6 +49,18 @@ Token *skip(Token *tok, char *s)
     return tok->next;
 }
 
+bool consume(Token **rest, Token *tok, char *str)
+{
+    if (equal(tok, str))
+    {
+        *rest = tok->next;
+        return true;
+    }
+
+    *rest = tok;
+    return false;
+}
+
 static int get_number(Token *tok)
 {
     if (tok->kind != TK_NUM)
@@ -99,7 +111,8 @@ static bool is_keyword(Token *tok)
         "if",
         "else",
         "for",
-        "while"};
+        "while",
+        "int"};
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); ++i)
     {

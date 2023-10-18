@@ -8,4 +8,5 @@
 *.dSYM*
 *.txt
 main
+au_cc
 /austins_compiler
