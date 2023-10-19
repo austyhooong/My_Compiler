@@ -52,6 +52,8 @@ struct Obj
 typedef struct Function Function;
 struct Function
 {
+    Function *next;
+    char *name;
     Node *body;
     Obj *locals; // local variables
     int stack_size;
@@ -112,6 +114,7 @@ typedef enum
 {
     TY_INT,
     TY_PTR,
+    TY_FUNC,
 } TypeKind;
 
 struct Type
@@ -123,12 +126,16 @@ struct Type
 
     // declaration
     Token *name;
+
+    // Function type
+    Type *return_ty;
 };
 
 extern Type *ty_int;
 bool is_integer(Type *ty);
 void add_type(Node *node);
 Type *pointer_to(Type *base);
+Type *func_type(Type *return_ty);
 
 // codegen.c
 void codegen(Function *prog);

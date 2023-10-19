@@ -6,6 +6,8 @@
 
 static int depth;
 static char *argreg[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+static Function *current_fn;
+
 static void gen_expr(Node *node);
 
 static int count(void)
@@ -180,7 +182,7 @@ static void gen_stmt(Node *node)
         return;
     case ND_RETURN:
         gen_expr(node->lhs);
-        printf("    jmp .L.return\n");
+        printf("    jmp .L.return.%s\n", current_fn->name);
         return;
     case ND_EXPR_STMT:
         gen_expr(node->lhs);
@@ -192,31 +194,38 @@ static void gen_stmt(Node *node)
 
 static void assign_lvar_offsets(Function *prog)
 {
-    int offset = 0;
-    for (Obj *var = prog->locals; var; var = var->next)
+    for (Function *fn = prog; fn; fn = fn->next)
     {
-        offset += 8;
-        var->offset = -offset;
+        int offset = 0;
+        for (Obj *var = fn->locals; var; var = var->next)
+        {
+            offset += 8;
+            var->offset = -offset; // pushing stack downward to allocate memory
+        }
+        fn->stack_size = align_to(offset, 16);
     }
-    prog->stack_size = align_to(offset, 16);
 }
 
 void codegen(Function *prog)
 {
     assign_lvar_offsets(prog);
-    printf("    .global main\n");
-    printf("main:\n");
+    for (Function *func = prog; func; func = func->next)
+    {
+        printf("    .global %s\n", func->name);
+        printf("%s:\n", func->name);
+        current_fn = func;
 
-    // prologue
-    printf("    push %%rbp\n");
-    printf("    mov %%rsp, %%rbp\n");
-    printf("    sub $%d, %%rsp\n", prog->stack_size);
+        // prologue
+        printf("    push %%rbp\n");
+        printf("    mov %%rsp, %%rbp\n");
+        printf("    sub $%d, %%rsp\n", func->stack_size);
 
-    gen_stmt(prog->body);
-    assert(depth == 0);
+        gen_stmt(func->body);
+        assert(depth == 0);
 
-    printf(".L.return:\n");
-    printf("    mov %%rbp, %%rsp\n");
-    printf("    pop %%rbp\n");
-    printf("    ret\n");
+        printf(".L.return.%s:\n", func->name);
+        printf("    mov %%rbp, %%rsp\n");
+        printf("    pop %%rbp\n");
+        printf("    ret\n");
+    }
 }
