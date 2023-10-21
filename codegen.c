@@ -2,6 +2,29 @@
 // prolog :prepares the registers and stack space for the function prior to execution
 // rbp : fixed base pointer of stack frame
 // rsp : top of the stack
+// rax : accmulator
+// rcx : counter
+
+/*
+    static data regions
+    - preceded by .data directive
+
+    labels
+    -denotes the address of the data
+    ex: 
+    var:
+        .byte 64 // declaring a byte referred to as a location var with value 64
+        .byte 10 // declaring a byte with no label at location var + 1 with value 10
+    foo:
+        .zero 10 // array of size 10 initialized with 0
+    str:
+        .string "hello" // special notation for initializing string
+    
+    address calculation:
+    mov %cl, (%esi, %eax, 4) // move the contents of CL into the byte at address ESI + EAS * 4
+
+ */ 
+
 #include "au_cc.h"
 
 static int depth;
@@ -220,6 +243,12 @@ void codegen(Function *prog)
         printf("    mov %%rsp, %%rbp\n");
         printf("    sub $%d, %%rsp\n", func->stack_size);
 
+        // save passed-by-register arguments to the stack
+        int i = 0;
+        for (Obj *var = func->params; var; var = var->next)
+            printf("    mov %s, %d(%%rbp)\n", argreg[i++], var->offset);
+
+        // emit code
         gen_stmt(func->body);
         assert(depth == 0);
 

@@ -54,6 +54,8 @@ struct Function
 {
     Function *next;
     char *name;
+    Obj *params;
+
     Node *body;
     Obj *locals; // local variables
     int stack_size;
@@ -129,10 +131,13 @@ struct Type
 
     // Function type
     Type *return_ty;
+    Type *params;
+    Type *next;
 };
 
 extern Type *ty_int;
 bool is_integer(Type *ty);
+Type *copy_type(Type *ty);
 void add_type(Node *node);
 Type *pointer_to(Type *base);
 Type *func_type(Type *return_ty);
