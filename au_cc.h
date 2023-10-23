@@ -48,7 +48,7 @@ struct Obj
     int offset; // offset from RBP
 };
 
-// Function
+// function
 typedef struct Function Function;
 struct Function
 {
@@ -117,17 +117,26 @@ typedef enum
     TY_INT,
     TY_PTR,
     TY_FUNC,
+    TY_ARRAY,
 } TypeKind;
 
 struct Type
 {
     TypeKind kind;
 
+    int size; // sizeof() value
+
+    // pointer to or array of type.
+    // same member is used to represent pointer/array duality
+    // for resolution of a pointer, this member is examined instead of kind member to determine the equivalence of pointer thus array of T is treated as a pointer to T as required by the C spec
     // pointer
     Type *base;
 
     // declaration
     Token *name;
+
+    // array
+    int array_len;
 
     // Function type
     Type *return_ty;
@@ -141,6 +150,7 @@ Type *copy_type(Type *ty);
 void add_type(Node *node);
 Type *pointer_to(Type *base);
 Type *func_type(Type *return_ty);
+Type *array_of(Type *base, int size);
 
 // codegen.c
 void codegen(Function *prog);

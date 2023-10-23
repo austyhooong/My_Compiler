@@ -11,7 +11,7 @@
 
     labels
     -denotes the address of the data
-    ex: 
+    ex:
     var:
         .byte 64 // declaring a byte referred to as a location var with value 64
         .byte 10 // declaring a byte with no label at location var + 1 with value 10
@@ -19,11 +19,11 @@
         .zero 10 // array of size 10 initialized with 0
     str:
         .string "hello" // special notation for initializing string
-    
+
     address calculation:
     mov %cl, (%esi, %eax, 4) // move the contents of CL into the byte at address ESI + EAS * 4
 
- */ 
+ */
 
 #include "au_cc.h"
 
@@ -74,6 +74,24 @@ static void gen_addr(Node *node)
     error_tok(node->tok, "not an lvalue");
 }
 
+// load a value from where &rax is pointing to
+static void load(Type *ty)
+{
+    if (ty->kind == TY_ARRAY)
+    {
+        // cannot load value of entire array thus convert it to a pointer referencing the first element of array
+        return;
+    }
+    printf("    mov (%%rax), %%rax\n");
+}
+
+// store %rax to an address that the stack top is pointing to
+static void store(void)
+{
+    pop("%rdi");
+    printf("    mov %%rax, (%%rdi)\n");
+}
+
 static void gen_expr(Node *node)
 {
     switch (node->kind)
@@ -87,11 +105,11 @@ static void gen_expr(Node *node)
         return;
     case ND_VAR:
         gen_addr(node);
-        printf("    mov (%%rax), %%rax\n");
+        load(node->ty);
         return;
     case ND_DEREF:
         gen_expr(node->lhs);
-        printf("    mov (%%rax), %%rax\n"); // value which resides in the address
+        load(node->ty);
         return;
     case ND_ADDR: // lea the address
         gen_addr(node->lhs);
@@ -100,8 +118,7 @@ static void gen_expr(Node *node)
         gen_addr(node->lhs);
         push(); // push rax to top of stack
         gen_expr(node->rhs);
-        pop("%rdi"); // store top of stack to rdi (lhs)
-        printf("    mov %%rax, (%%rdi)\n");
+        store();
         return;
     case ND_FUNCALL:
     {
@@ -222,7 +239,7 @@ static void assign_lvar_offsets(Function *prog)
         int offset = 0;
         for (Obj *var = fn->locals; var; var = var->next)
         {
-            offset += 8;
+            offset += var->ty->size;
             var->offset = -offset; // pushing stack downward to allocate memory
         }
         fn->stack_size = align_to(offset, 16);
