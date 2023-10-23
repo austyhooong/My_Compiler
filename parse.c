@@ -136,7 +136,7 @@ static Type *func_params(Token **rest, Token *tok, Type *ty)
 }
 
 // type-suffix = "(" func-params
-//              | "[" num "]"
+//              | "[" num "]" type_suffix
 //              | ε
 static Type *type_suffix(Token **rest, Token *tok, Type *ty)
 {
@@ -146,7 +146,8 @@ static Type *type_suffix(Token **rest, Token *tok, Type *ty)
     if (equal(tok, "["))
     {
         int sz = get_number(tok->next);
-        *rest = skip(tok->next->next, "]");
+        tok = skip(tok->next->next, "]");
+        ty = type_suffix(rest, tok, ty);
         return array_of(ty, sz);
     }
 
@@ -367,7 +368,7 @@ static Node *relational(Token **rest, Token *tok)
 
 // Within C, "+" is overloaded to perform the pointer arithmetic.
 // If P is a pointer, p + n, n * (sizeof(*p)) is added instead
-// Following function accomodates for the above distinction
+// Following function accomodates the above distinction
 static Node *new_add(Node *lhs, Node *rhs, Token *tok)
 {
     add_type(lhs);
