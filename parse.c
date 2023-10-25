@@ -530,7 +530,7 @@ static Node *funcall(Token **rest, Token *tok)
     return node;
 }
 
-// primary = "(" expr ")" | ident fund-args? | num
+// primary = "(" expr ")" | "sizeof" unary | ident fund-args? | num
 static Node *primary(Token **rest, Token *tok)
 {
     if (equal(tok, "("))
@@ -539,6 +539,14 @@ static Node *primary(Token **rest, Token *tok)
         *rest = skip(tok, ")");
         return node;
     }
+
+    if (equal(tok, "sizeof"))
+    {
+        Node *node = unary(rest, tok->next);
+        add_type(node);
+        return new_num(node->ty->size, tok);
+    }
+
     if (tok->kind == TK_IDENT)
     {
         if (equal(tok->next, "("))
