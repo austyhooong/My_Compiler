@@ -39,6 +39,8 @@ tokenize(char *input);
 
 // parse.c
 typedef struct Node Node;
+
+// variable or function
 typedef struct Obj Obj;
 struct Obj
 {
@@ -46,16 +48,11 @@ struct Obj
     char *name; // variable name
     Type *ty;
     int offset; // offset from RBP
-};
 
-// function
-typedef struct Function Function;
-struct Function
-{
-    Function *next;
-    char *name;
+    bool is_local;    // local or global/function
+    bool is_function; // global variable or function
+
     Obj *params;
-
     Node *body;
     Obj *locals; // local variables
     int stack_size;
@@ -109,7 +106,7 @@ struct Node
     Node *inc;
 };
 
-Function *parse(Token *tok);
+Obj *parse(Token *tok);
 
 // type.c
 typedef enum
@@ -153,4 +150,4 @@ Type *func_type(Type *return_ty);
 Type *array_of(Type *base, int size);
 
 // codegen.c
-void codegen(Function *prog);
+void codegen(Obj *prog);

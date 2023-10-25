@@ -18,7 +18,8 @@ since C does not allow returning more than one value, only the current node is r
 #include "au_cc.h"
 
 // all local variable instances created
-Obj *locals;
+static Obj *locals;
+static Obj *globals;
 
 static Type *declspec(Token **rest, Token *tok);
 static Type *declarator(Token **rest, Token *tok, Type *ty);
@@ -82,13 +83,29 @@ static Node *new_var_node(Obj *var, Token *tok)
     return node;
 }
 
-static Obj *new_lvar(char *name, Type *ty)
+static Obj *new_var(char *name, Type *ty)
 {
     Obj *var = calloc(1, sizeof(Obj));
     var->name = name;
+    var->ty = ty;
+    return var;
+}
+
+static Obj *new_lvar(char *name, Type *ty)
+{
+    Obj *var = new_var(name, ty);
+    var->is_local = true;
     var->next = locals; // create linked list of up to 6 arguments
     var->ty = ty;
     locals = var;
+    return var;
+}
+
+static Obj *new_gvar(char *name, Type *ty)
+{
+    Obj *var = new_var(name, ty);
+    var->next = globals;
+    globals = var;
     return var;
 }
 
@@ -578,29 +595,31 @@ static void create_param_lvars(Type *param)
     }
 }
 
-static Function *function(Token **rest, Token *tok)
+static Token *function(Token *tok, Type *basety)
 {
-    Type *ty = declspec(&tok, tok);
-    ty = declarator(&tok, tok, ty);
+    Type *ty = declarator(&tok, tok, basety);
+    Obj *fn = new_gvar(get_ident(ty->name), ty);
+    fn->is_function = true;
 
     locals = NULL;
 
-    Function *fn = calloc(1, sizeof(Function));
-    fn->name = get_ident(ty->name);
     create_param_lvars(ty->params);
     fn->params = locals;
 
     tok = skip(tok, "{");
-    fn->body = compound_stmt(rest, tok);
+    fn->body = compound_stmt(&tok, tok);
     fn->locals = locals;
-    return fn;
+    return tok;
 }
 
-Function *parse(Token *tok)
+// program = (function-definition | global-varaibles)*
+Obj *parse(Token *tok)
 {
-    Function head = {};
-    Function *cur = &head;
+    globals = NULL;
     while (tok->kind != TK_EOF)
-        cur = cur->next = function(&tok, tok);
-    return head.next;
+    {
+        Type *basety = declspec(&tok, tok);
+        tok = function(tok, basety);
+    }
+    return globals;
 }
