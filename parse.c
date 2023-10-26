@@ -44,6 +44,11 @@ static Obj *find_var(Token *tok)
         if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
             return var;
     }
+    for (Obj *var = globals; var; var = var->next)
+    {
+        if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
+            return var;
+    }
     return NULL;
 }
 static Node *new_node(NodeKind kind, Token *tok)
@@ -612,6 +617,35 @@ static Token *function(Token *tok, Type *basety)
     return tok;
 }
 
+static Token *global_variable(Token *tok, Type *basety)
+{
+    bool first = true;
+
+    while (!consume(&tok, tok, ";"))
+    {
+        if (!first)
+            tok = skip(tok, ",");
+        first = false;
+
+        Type *ty = declarator(&tok, tok, basety);
+        new_gvar(get_ident(ty->name), ty);
+    }
+    return tok;
+}
+
+// look ahead of tokens and return true if a give token is a start of a function def/declaration
+static bool is_function(Token *tok)
+{
+    if (equal(tok->next, ";"))
+    {
+        return false;
+    }
+
+    Type dummy = {};
+    Type *ty = declarator(&tok, tok, &dummy);
+    return ty->kind == TY_FUNC;
+}
+
 // program = (function-definition | global-varaibles)*
 Obj *parse(Token *tok)
 {
@@ -619,7 +653,16 @@ Obj *parse(Token *tok)
     while (tok->kind != TK_EOF)
     {
         Type *basety = declspec(&tok, tok);
-        tok = function(tok, basety);
+
+        // function
+        if (is_function(tok))
+        {
+            tok = function(tok, basety);
+            continue;
+        }
+
+        // global variables
+        tok = global_variable(tok, basety);
     }
     return globals;
 }
