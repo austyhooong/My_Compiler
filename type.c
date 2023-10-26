@@ -1,10 +1,11 @@
 #include "au_cc.h"
 
 Type *ty_int = &(Type){TY_INT, 8}; // initialize the first member of Type (typekind) to TY_INT
+Type *ty_char = &(Type){TY_CHAR, 1};
 
 bool is_integer(Type *ty)
 {
-    return ty->kind == TY_INT;
+    return ty->kind == TY_INT || ty->kind == TY_CHAR;
 }
 
 Type *copy_type(Type *ty)

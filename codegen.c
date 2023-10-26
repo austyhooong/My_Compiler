@@ -7,6 +7,7 @@
 // rip : instrution pointer referring to the the next assembly instruction below
 // a(&rip): calculate rel32 displacement to reach a from rip
 
+// mov (b (byte), w (2byte), l(4byte), q(8byte))
 /*
     static data regions
     - preceded by .data directive
@@ -30,7 +31,8 @@
 #include "au_cc.h"
 
 static int depth;
-static char *argreg[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
+static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
 static Obj *current_fn;
 
 static void gen_expr(Node *node);
@@ -93,14 +95,23 @@ static void load(Type *ty)
         // cannot load value of entire array thus convert it to a pointer referencing the first element of array
         return;
     }
-    printf("    mov (%%rax), %%rax\n");
+    if (ty->size == 1)
+    {
+        printf("    movsbq (%%rax), %%rax\n"); // movsb: move one byte and sign extend to 8 bytes
+    }
+    else
+        printf("    mov (%%rax), %%rax\n");
 }
 
 // store %rax to an address that the stack top is pointing to
-static void store(void)
+static void store(Type *ty)
 {
     pop("%rdi");
-    printf("    mov %%rax, (%%rdi)\n");
+
+    if (ty->size == 1)
+        printf("    mov %%al, (%%rdi)\n");
+    else
+        printf("    mov %%rax, (%%rdi)\n");
 }
 
 static void gen_expr(Node *node)
@@ -129,7 +140,7 @@ static void gen_expr(Node *node)
         gen_addr(node->lhs);
         push(); // push rax to top of stack
         gen_expr(node->rhs);
-        store();
+        store(node->ty);
         return;
     case ND_FUNCALL:
     {
@@ -142,7 +153,7 @@ static void gen_expr(Node *node)
         }
 
         for (int i = num_args - 1; i >= 0; --i)
-            pop(argreg[i]);
+            pop(argreg64[i]);
         printf("    mov $0, %%rax\n");
         printf("    call %s\n", node->funcname);
         return;
@@ -293,7 +304,16 @@ static void emit_text(Obj *prog)
         // save passed-by-register arguments to the stack
         int i = 0;
         for (Obj *var = func->params; var; var = var->next)
-            printf("    mov %s, %d(%%rbp)\n", argreg[i++], var->offset);
+        {
+            if (var->ty->size == 1)
+            {
+                printf("    mov %s, %d(%%rbp)\n", argreg8[i++], var->offset);
+            }
+            else
+            {
+                printf("    mov %s, %d(%%rbp)\n", argreg64[i++], var->offset);
+            }
+        }
 
         // emit code
         gen_stmt(func->body);
