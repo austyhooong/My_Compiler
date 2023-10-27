@@ -114,7 +114,28 @@ static Obj *new_gvar(char *name, Type *ty)
     return var;
 }
 
-static char *get_ident(Token *tok)
+static char *new_unique_name(void)
+{
+    static int id = 0;
+    char *buf = calloc(1, 20);
+    sprintf(buf, ".L..%d", id++); // copy second argument (expanded output) to first arg
+    return buf;
+}
+
+static Obj *new_anon_gvar(Type *ty)
+{
+    return new_gvar(new_unique_name(), ty);
+}
+
+static Obj *new_string_literal(char *p, Type *ty)
+{
+    Obj *var = new_anon_gvar(ty);
+    var->init_data = p;
+    return var;
+}
+
+static char *
+get_ident(Token *tok)
 {
     if (tok->kind != TK_IDENT)
         error_tok(tok, "expected an identifier");
@@ -590,10 +611,19 @@ static Node *primary(Token **rest, Token *tok)
         Obj *var = find_var(tok);
         if (!var)
             error_tok(tok, "undefined variable");
-        // var = new_lvar(strndup(tok->loc, tok->len)); // strndup: creates null terminated copy of first param with at most second param bytes
+        // var = new_lvar(strndup(tok->loc, tok->len));
+        // strndup: creates null terminated copy of first param with at most second param bytes
         *rest = tok->next;
         return new_var_node(var, tok);
     }
+
+    if (tok->kind == TK_STR)
+    {
+        Obj *var = new_string_literal(tok->str, tok->ty);
+        *rest = tok->next;
+        return new_var_node(var, tok);
+    }
+
     if (tok->kind == TK_NUM)
     {
         Node *node = new_num(tok->val, tok);

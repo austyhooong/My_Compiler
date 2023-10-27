@@ -15,6 +15,7 @@ typedef enum
     TK_NUM,
     TK_EOF,
     TK_KEYWORD,
+    TK_STR, // string literals
 } TokenKind;
 
 typedef struct Type Type;
@@ -25,7 +26,9 @@ struct Token
     Token *next;
     int val;   // if TK_NUM
     char *loc; // token location
-    int len;   // token len (ex: lenght of the integer)
+    int len;   // token len (ex: length of the integer (123 => 3))
+    Type *ty;  // for TK_STR
+    char *str; // string literalwith terminating '\0'
 };
 
 void error(char *fmt, ...);
@@ -51,6 +54,9 @@ struct Obj
 
     bool is_local;    // local or global/function
     bool is_function; // global variable or function
+
+    // global variable
+    char *init_data;
 
     Obj *params;
     Node *body;

@@ -124,6 +124,21 @@ static bool is_keyword(Token *tok)
     return false;
 }
 
+static Token *read_string_literal(char *start)
+{
+    char *p = start + 1;
+    for (; *p != '"'; ++p)
+    {
+        if (*p == '\n' || *p == '\0')
+            error_at(start, "unclosed string literal");
+    }
+
+    Token *tok = new_token(TK_STR, start, p + 1); // store "..."
+    tok->ty = array_of(ty_char, p - start);
+    tok->str = strndup(start + 1, p - start - 1);
+    return tok;
+}
+
 static void convert_keywords(Token *tok)
 {
     for (Token *t = tok; t->kind != TK_EOF; t = t->next)
@@ -150,6 +165,11 @@ Token *tokenize(char *p)
             char *q = p;
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
+        }
+        else if (*p == '"')
+        {
+            cur = cur->next = read_string_literal(p);
+            p += cur->len;
         }
         // identifier | keyword
         else if (is_ident_letter(*p))
