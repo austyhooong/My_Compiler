@@ -124,18 +124,71 @@ static bool is_keyword(Token *tok)
     return false;
 }
 
-static Token *read_string_literal(char *start)
+static int read_escaped_ch(char *p)
 {
-    char *p = start + 1;
+    // string literals are read as it is (escaped sequence being escaped)
+    //  escaped characters are inheritantly interpreted by the compiler
+    //  thus no post-processing is
+    switch (*p)
+    {
+    case 'a':
+        return '\a';
+    case 'b':
+        return '\b';
+    case 't':
+        return '\t';
+    case 'n':
+        return '\n';
+    case 'v':
+        return '\v';
+    case 'f':
+        return '\f';
+    case 'r':
+        return '\r';
+    case 'e': // suppported in GNU C extension
+        return 27;
+    default:
+        return *p;
+    }
+}
+
+// find closing double-quote
+static char *string_literal_end(char *p)
+{
+    char *start = p;
     for (; *p != '"'; ++p)
     {
         if (*p == '\n' || *p == '\0')
             error_at(start, "unclosed string literal");
+        if (*p == '\\')
+            ++p;
+    }
+    return p;
+}
+
+static Token *read_string_literal(char *start)
+{
+    char *end = string_literal_end(start + 1);
+    char *buf = calloc(1, end - start);
+    int len = 0;
+
+    for (char *p = start + 1; p < end;)
+    {
+        // escaped characters within string must be explicitly parsed
+        if (*p == '\\')
+        {
+            buf[len++] = read_escaped_ch(p + 1);
+            p += 2;
+        }
+        else
+        {
+            buf[len++] = *p++;
+        }
     }
 
-    Token *tok = new_token(TK_STR, start, p + 1); // store "..."
-    tok->ty = array_of(ty_char, p - start);
-    tok->str = strndup(start + 1, p - start - 1);
+    Token *tok = new_token(TK_STR, start, end + 1); // store "..."
+    tok->ty = array_of(ty_char, len + 1);
+    tok->str = buf;
     return tok;
 }
 

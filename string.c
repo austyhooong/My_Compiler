@@ -1,6 +1,5 @@
 #include "au_cc.h"
 
-
 char *format(char *fmt, ...)
 {
     char *buf;
