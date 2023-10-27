@@ -7,6 +7,10 @@
 #include <string.h>
 #include <assert.h>
 
+// string.c
+
+char *format(char *fmt, ...);
+
 // tokenize.c
 typedef enum
 {
