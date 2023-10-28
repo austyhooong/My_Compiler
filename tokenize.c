@@ -97,6 +97,17 @@ static bool is_ident_nonletter(char c)
     return is_ident_letter(c) || ('0' <= c && c <= '9');
 }
 
+// parse A-F 1-9 a-f
+static int parse_hex(char c)
+{
+    if ('0' <= c && c <= '9')
+    {
+        return c - '0';
+    }
+    if ('a' <= c && c <= 'f')
+        return c - 'a' + 10;
+    return c - 'A' + 10;
+}
 static int read_op(char *p)
 {
     if (start_with(p, "==") || start_with(p, "<=") || start_with(p, "!=") || start_with(p, ">="))
@@ -142,8 +153,26 @@ static int read_escaped_ch(char **new_pos, char *p)
         *new_pos = p;
         return c;
     }
+    if (*p == 'x')
+    {
+        // parse hexdecimal
+        ++p;
+        if (!isxdigit(*p))
+        {
+            error_at(p, "invalid hex escape sequence");
+        }
+
+        int c = 0;
+        for (; isxdigit(*p); ++p)
+        {
+            c = (c << 4) + parse_hex(*p);
+        }
+        *new_pos = p;
+        return c;
+    }
 
     *new_pos = p + 1;
+
     // string literals are read as it is
     // escaped characters are inheritantly interpreted by the compiler
     // thus no post-processing is

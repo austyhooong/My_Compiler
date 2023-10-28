@@ -193,5 +193,10 @@ assert 0 'int main() {return "\0"[0]; }'
 assert 8 'int main() {return "\10"[0]; }'
 assert 48 'int main() { return "\1500"[1]; }'
 
+assert 0 'int main() { return "\x00"[0]; }'
+assert 119 'int main() { return "\x77"[0]; }'
+assert 165 'int main() { return "\xA5"[0]; }'
+assert 255 'int main() { return "\x00FF"[0]; }'
+
 echo Good Job!
 
