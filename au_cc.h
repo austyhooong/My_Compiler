@@ -86,10 +86,11 @@ typedef enum
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
-    ND_BLOCK,   // {...}
-    ND_IF,      // if statement
-    ND_FOR,     // for || while statement
-    ND_FUNCALL, // function call
+    ND_BLOCK, // {...}
+    ND_STMT_EXPR, // statement expression ({})
+    ND_IF,        // if statement
+    ND_FOR,       // for || while statement
+    ND_FUNCALL,   // function call
 } NodeKind;
 
 // abstract syntax tree
@@ -102,7 +103,9 @@ struct Node
     Node *lhs;
     Node *rhs;
     int val;
-    Obj *var;   // kind == ND_VAR
+    Obj *var; // kind == ND_VAR
+
+    // block || statement expression
     Node *body; // kind == ND_BLOCK
 
     char *funcname; // function call
