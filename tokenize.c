@@ -124,11 +124,29 @@ static bool is_keyword(Token *tok)
     return false;
 }
 
-static int read_escaped_ch(char *p)
+static int read_escaped_ch(char **new_pos, char *p)
 {
-    // string literals are read as it is (escaped sequence being escaped)
-    //  escaped characters are inheritantly interpreted by the compiler
-    //  thus no post-processing is
+    // octal number starts with \ and followed by at most 3 digits (must be less than 8)
+    if ('0' <= *p && *p <= '7')
+    {
+        // read an octal number
+        int c = *p++ - '0';
+        if ('0' <= *p && *p <= '7')
+        {
+            c = (c << 3) + (*p++ - '0');
+            if ('0' <= *p && *p <= '7')
+            {
+                c = (c << 3) + (*p++ - '0');
+            }
+        }
+        *new_pos = p;
+        return c;
+    }
+
+    *new_pos = p + 1;
+    // string literals are read as it is
+    // escaped characters are inheritantly interpreted by the compiler
+    // thus no post-processing is
     switch (*p)
     {
     case 'a':
@@ -174,11 +192,10 @@ static Token *read_string_literal(char *start)
 
     for (char *p = start + 1; p < end;)
     {
-        // escaped characters within string must be explicitly parsed
+        // escape characters within string must be explicitly parsed
         if (*p == '\\')
         {
-            buf[len++] = read_escaped_ch(p + 1);
-            p += 2;
+            buf[len++] = read_escaped_ch(&p, p + 1);
         }
         else
         {

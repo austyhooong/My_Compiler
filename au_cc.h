@@ -32,7 +32,7 @@ struct Token
     char *loc; // token location
     int len;   // token len (ex: length of the integer (123 => 3))
     Type *ty;  // for TK_STR
-    char *str; // string literalwith terminating '\0'
+    char *str; // string literal with terminating '\0'
 };
 
 void error(char *fmt, ...);
