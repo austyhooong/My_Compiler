@@ -1,4 +1,9 @@
 #include "au_cc.h"
+
+// input filename
+static char *current_filename;
+
+// input string
 static char *current_input;
 
 void error(char *fmt, ...)
@@ -10,10 +15,35 @@ void error(char *fmt, ...)
     exit(1);
 }
 
+// reports an error message in the following format and exit
+// ex:
+//  foo.c:10: x = y + 1;
+//                ^ <error message>
 static void verror_at(char *loc, char *fmt, va_list ap)
 {
-    int pos = loc - current_input;
-    fprintf(stderr, "%s\n", current_input);
+    // find a line containing 'loc'
+    char *line = loc;
+    while (current_input < line && line[-1] != '\n')
+        line--;
+
+    char *end = loc;
+    while (*end != '\n')
+        ++end;
+
+    // get a line number by parsing the entire current input from the beginning
+    int line_no = 1;
+    for (char *p = current_input; p < line; ++p)
+        if (*p == '\n')
+            ++line_no;
+
+    // print out the line: foo.c:10:
+    int indent = fprintf(stderr, "%s:%d: ", current_filename, line_no);
+    // x = y + 1;
+    fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+    // show the error message
+    int pos = loc - line + indent;
+
     fprintf(stderr, "%*s", pos, ""); // print pos amount of space
     fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
@@ -247,8 +277,9 @@ static void convert_keywords(Token *tok)
     }
 }
 
-Token *tokenize(char *p)
+static Token *tokenize(char *filename, char *p)
 {
+    current_filename = filename;
     current_input = p;
     Token head = {};
     Token *cur = &head;
@@ -292,4 +323,62 @@ Token *tokenize(char *p)
     }
     cur = cur->next = new_token(TK_EOF, p, p);
     return head.next;
+}
+
+// return the contents of the given file
+static char *read_file(char *path)
+{
+    FILE *fp;
+
+    // by convention, "-" refers to stdin
+    if (strcmp(path, "-") == 0)
+    {
+        fp = stdin;
+    }
+    else
+    {
+        fp = fopen(path, "r");
+        if (!fp)
+        {
+            // strerror: searches an internal array for the errno and returns a pointer to the error message
+            error("cannot open %s: %s", path, strerror(errno));
+        }
+    }
+
+    char *buf;
+    size_t buflen;
+    // dynamically open a stream for writing to a memory buffer (&buf)
+    // updated upon fflush or fclose
+    FILE *out = open_memstream(&buf, &buflen);
+
+    // read the entire file
+    for (;;)
+    {
+        char buf2[4096];
+        // reads data from fp into the array pointed to by buf2
+        int n = fread(buf2, 1, sizeof(buf2), fp);
+        if (n == 0)
+            break;
+        // writes data from buf2 to given stream pointed by out
+        fwrite(buf2, 1, n, out);
+    }
+
+    if (fp != stdin)
+        fclose(fp);
+
+    // explicitly flushing the buffer to the stream
+    fflush(out);
+
+    // make sure that the last line is properly terminated with '\n'
+    if (buflen == 0 || buf[buflen - 1] != '\n')
+        fputc('\n', out);
+    // writes a character to the specified stream and advances the position indicator of the stream
+    fputc('\0', out);
+    fclose(out);
+    return buf;
+}
+
+Token *tokenize_file(char *path)
+{
+    return tokenize(path, read_file(path));
 }

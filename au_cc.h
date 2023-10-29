@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 // string.c
 
@@ -42,7 +43,7 @@ bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
 bool consume(Token **rest, Token *tok, char *str);
 Token *
-tokenize(char *input);
+tokenize_file(char *filename);
 
 // parse.c
 typedef struct Node Node;
@@ -86,7 +87,7 @@ typedef enum
     ND_VAR,       // variable
     ND_EXPR_STMT, // expression statement
     ND_RETURN,
-    ND_BLOCK, // {...}
+    ND_BLOCK,     // {...}
     ND_STMT_EXPR, // statement expression ({})
     ND_IF,        // if statement
     ND_FOR,       // for || while statement

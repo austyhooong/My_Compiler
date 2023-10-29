@@ -13,7 +13,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  ./au_cc "$input" > tmp.s || exit
+  echo "$input" | ./au_cc - > tmp.s || exit # - as stdin for convension
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"
@@ -205,4 +205,3 @@ assert 6 'int main() { return ({ 1; }) + ({ 2; }) + ({ 3; }); }'
 assert 3 'int main() { return ({ int x=3; x; }); }'
 
 echo Good Job!
-
