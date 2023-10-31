@@ -167,4 +167,4 @@ Type *func_type(Type *return_ty);
 Type *array_of(Type *base, int size);
 
 // codegen.c
-void codegen(Obj *prog);
+void codegen(Obj *prog, FILE *out);

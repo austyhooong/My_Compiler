@@ -13,7 +13,7 @@ assert() {
   expected="$1"
   input="$2"
 
-  echo "$input" | ./au_cc - > tmp.s || exit # - as stdin for convension
+  echo "$input" | ./au_cc -o tmp.s - || exit # - as stdin for convension
   gcc -static -o tmp tmp.s tmp2.o
   ./tmp
   actual="$?"

@@ -18,6 +18,9 @@ $+: similar to $^, but includes duplicates. \
 $?: the names of all prerequisites that are newer than the target, separated by spaces.
 
 # .c file is implicitly converted to .o file; no need make a rule
+
+#phony distinguishes target from file (file is prioritized)
+
 CFLAGS=-std=c11 -g -fno-common
 CC=gcc
 #expand by space separated result
@@ -30,6 +33,7 @@ $(OBJS): au_cc.h
 
 test: clean au_cc
 	./test.sh
+	./test-driver.sh
 
 # --rm : close container after the command
 docker:

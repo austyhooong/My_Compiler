@@ -1,17 +1,71 @@
 #include "au_cc.h"
 
+static char *opt_o;
+
+static char *input_path;
+
+static void usage(int status)
+{
+    fprintf(stderr, "au_cc [ -o <path> ] <file>\n");
+    exit(status);
+}
+
+static void parse_args(int argc, char **argv)
+{
+    for (int i = 1; i < argc; ++i)
+    {
+        if (!strcmp(argv[i], "--help"))
+            usage(0);
+
+        // check for output file name
+        if (!strcmp(argv[i], "-o"))
+        {
+            if (!argv[++i])
+                usage(1);
+            opt_o = argv[i];
+            continue;
+        }
+
+        // if the input file name starts with -o
+        if (!strncmp(argv[i], "-o", 2))
+        {
+            opt_o = argv[i] + 2;
+            continue;
+        }
+
+        if (argv[i][0] == '-' && argv[i][1] != '\0')
+            error("unknown argument: %s", argv[i]);
+
+        input_path = argv[i];
+    }
+
+    if (!input_path)
+        error("no input files");
+}
+
+static FILE *open_file(char *path)
+{
+    if (!path || strcmp(path, "-") == 0)
+        return stdout;
+
+    // create a new file; if the file exists, its destroyed
+    FILE *out = fopen(path, "w");
+    if (!out)
+        error("cannot open output file: %s: %s", path, strerror(errno));
+    return out;
+}
+
 int main(int argc, char **argv)
 {
-    if (argc != 2)
-        error("%s: invalid number of arguments\n", argv[0]);
-
+    parse_args(argc, argv);
     // printf("    mov $%ld, %%rax\n", get_number(tok)); // strtol converts the beginning of operations into long int and stores the rest of them in &operations)
 
     // tokenize and parse
-    Token *tok = tokenize_file(argv[1]);
+    Token *tok = tokenize_file(input_path);
     Obj *prog = parse(tok);
 
     // traverse the AST to generate assembly code
-    codegen(prog);
+    FILE *out = open_file(opt_o);
+    codegen(prog, out);
     return 0;
 }
