@@ -17,9 +17,29 @@ since C does not allow returning more than one value, only the current node is r
 
 #include "au_cc.h"
 
+// scope for local or global variables
+typedef struct Var_scope Var_scope;
+
+struct Var_scope
+{
+    Var_scope *next;
+    char *name;
+    Obj *var;
+};
+
+// represents a block scope
+typedef struct Scope Scope;
+struct Scope
+{
+    Scope *next;
+    Var_scope *vars;
+};
+
 // all local variable instances created
 static Obj *locals;
 static Obj *globals;
+
+static Scope *scope = &(Scope){};
 
 static Type *declspec(Token **rest, Token *tok);
 static Type *declarator(Token **rest, Token *tok, Type *ty);
@@ -37,20 +57,30 @@ static Node *unary(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 static Node *postfix(Token **rest, Token *tok);
 
+// nested scope can access external scope
+static void enter_scope(void)
+{
+    Scope *sc = calloc(1, sizeof(Scope));
+    sc->next = scope;
+    scope = sc;
+}
+
+static void leave_scope(void)
+{
+    scope = scope->next;
+}
+
 static Obj *find_var(Token *tok)
 {
-    for (Obj *var = locals; var; var = var->next)
+    for (Scope *sc = scope; sc; sc = sc->next)
     {
-        if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
-            return var;
-    }
-    for (Obj *var = globals; var; var = var->next)
-    {
-        if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
-            return var;
+        for (Var_scope *vs = sc->vars; vs; vs = vs->next)
+            if (equal(tok, vs->name))
+                return vs->var;
     }
     return NULL;
 }
+
 static Node *new_node(NodeKind kind, Token *tok)
 {
     Node *node = calloc(1, sizeof(Node));
@@ -88,11 +118,22 @@ static Node *new_var_node(Obj *var, Token *tok)
     return node;
 }
 
+static Var_scope *push_scope(char *name, Obj *var)
+{
+    Var_scope *vs = calloc(1, sizeof(Var_scope));
+    vs->name = name;
+    vs->var = var;
+    vs->next = scope->vars;
+    scope->vars = vs;
+    return vs;
+}
+
 static Obj *new_var(char *name, Type *ty)
 {
     Obj *var = calloc(1, sizeof(Obj));
     var->name = name;
     var->ty = ty;
+    push_scope(name, var);
     return var;
 }
 
@@ -327,6 +368,9 @@ static Node *compound_stmt(Token **rest, Token *tok)
     Node *node = new_node(ND_BLOCK, tok);
     Node head = {};
     Node *cur = &head;
+
+    enter_scope();
+
     while (!equal(tok, "}"))
     {
         if (is_typename(tok))
@@ -335,6 +379,9 @@ static Node *compound_stmt(Token **rest, Token *tok)
             cur = cur->next = stmt(&tok, tok);
         add_type(cur);
     }
+
+    leave_scope();
+
     node->body = head.next;
     *rest = tok->next;
     return node;
@@ -656,13 +703,14 @@ static Token *function(Token *tok, Type *basety)
     fn->is_function = true;
 
     locals = NULL;
-
+    enter_scope();
     create_param_lvars(ty->params);
     fn->params = locals;
 
     tok = skip(tok, "{");
     fn->body = compound_stmt(&tok, tok);
     fn->locals = locals;
+    leave_scope();
     return tok;
 }
 
