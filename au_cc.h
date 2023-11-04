@@ -34,6 +34,8 @@ struct Token
     int len;   // token len (ex: length of the integer (123 => 3))
     Type *ty;  // for TK_STR
     char *str; // string literal with terminating '\0'
+
+    int line_num; // line number
 };
 
 void error(char *fmt, ...);
