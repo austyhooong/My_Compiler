@@ -26,7 +26,7 @@ static void parse_args(int argc, char **argv)
             continue;
         }
 
-        // if the input file name starts with -o
+        // if the output file name is concatenated with -o
         if (!strncmp(argv[i], "-o", 2))
         {
             opt_o = argv[i] + 2;
@@ -48,7 +48,7 @@ static FILE *open_file(char *path)
     if (!path || strcmp(path, "-") == 0)
         return stdout;
 
-    // create a new file; if the file exists, its destroyed
+    // create a new file; if the file exists, its replaced
     FILE *out = fopen(path, "w");
     if (!out)
         error("cannot open output file: %s: %s", path, strerror(errno));

@@ -10,3 +10,4 @@
 main
 au_cc
 /austins_compiler
+/test/*.exe

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # create a temp direcdtory with random name filled in X
 tmp=`mktemp -d /tmp/chibicc-test-XXXXXX`
 # create a default command to run when INT TEMP HUP EXIT signals are generated
@@ -15,7 +15,7 @@ check() {
     fi
 }
 
-# -o
+# -o: when output file is specified
 rm -f $tmp/out
 ./au_cc -o $tmp/out $tmp/empty.c
 [ -f $tmp/out ]
