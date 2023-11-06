@@ -278,7 +278,7 @@ static void convert_keywords(Token *tok)
 }
 
 // initialize line number into all the tokens
-// -finds a line number by parsing the entire current input from the beginning
+// -> finds a line number by parsing the entire current input from the beginning
 static void add_line_numbers(Token *tok)
 {
     char *p = current_input;
