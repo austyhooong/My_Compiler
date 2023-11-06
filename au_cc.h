@@ -84,6 +84,7 @@ typedef enum
     ND_LT,
     ND_LE,
     ND_ASSIGN,    // =
+    ND_COMMA,     // ,
     ND_ADDR,      // address &
     ND_DEREF,     // dereference *
     ND_VAR,       // variable

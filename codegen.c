@@ -93,6 +93,10 @@ static void gen_addr(Node *node)
     case ND_DEREF:
         gen_expr(node->lhs);
         return;
+    case ND_COMMA:
+        gen_expr(node->lhs);
+        gen_addr(node->rhs);
+        return;
     }
 
     error_tok(node->tok, "not an lvalue");
@@ -159,6 +163,10 @@ static void gen_expr(Node *node)
         {
             gen_stmt(n);
         }
+        return;
+    case ND_COMMA:
+        gen_expr(node->lhs);
+        gen_expr(node->rhs);
         return;
     case ND_FUNCALL:
     {
