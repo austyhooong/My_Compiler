@@ -22,7 +22,7 @@ void error(char *fmt, ...)
 
 static void verror_at(int line_num, char *loc, char *fmt, va_list ap)
 {
-    // find a line containing 'loc'
+    // find a beginning of the loc
     char *line = loc;
     while (current_input < line && line[-1] != '\n')
         line--;
@@ -33,6 +33,7 @@ static void verror_at(int line_num, char *loc, char *fmt, va_list ap)
 
     // print out the line: foo.c:10:
     int indent = fprintf(stderr, "%s:%d: ", current_filename, line_num);
+
     // x = y + 1;
     fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
@@ -155,7 +156,8 @@ static bool is_keyword(Token *tok)
         "while",
         "int",
         "sizeof",
-        "char"};
+        "char",
+        "struct"};
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); ++i)
     {
@@ -293,7 +295,7 @@ static void add_line_numbers(Token *tok)
         }
         if (*p == '\n')
             ++num;
-    } while (++(*p));
+    } while (*p++);
 }
 
 static Token *tokenize(char *filename, char *p)
@@ -420,5 +422,6 @@ static char *read_file(char *path)
 
 Token *tokenize_file(char *path)
 {
-    return tokenize(path, read_file(path));
+    char *p = read_file(path);
+    return tokenize(path, p);
 }

@@ -25,6 +25,9 @@ typedef enum
 
 typedef struct Type Type;
 typedef struct Token Token;
+typedef struct Node Node;
+typedef struct Member Member;
+
 struct Token
 {
     TokenKind kind;
@@ -48,7 +51,6 @@ Token *
 tokenize_file(char *filename);
 
 // parse.c
-typedef struct Node Node;
 
 // variable or function
 typedef struct Obj Obj;
@@ -95,6 +97,7 @@ typedef enum
     ND_IF,        // if statement
     ND_FOR,       // for || while statement
     ND_FUNCALL,   // function call
+    ND_MEMBER,    // . (struct member access)
 } NodeKind;
 
 // abstract syntax tree
@@ -111,6 +114,9 @@ struct Node
 
     // block || statement expression
     Node *body; // kind == ND_BLOCK
+
+    // struct member access
+    Member *member;
 
     char *funcname; // function call
     Node *args;
@@ -133,13 +139,15 @@ typedef enum
     TY_PTR,
     TY_FUNC,
     TY_ARRAY,
+    TY_STRUCT,
 } TypeKind;
 
 struct Type
 {
     TypeKind kind;
 
-    int size; // sizeof() value
+    int size;  // sizeof() value
+    int align; // alignment
 
     // pointer to or array of type.
     // same member is used to represent pointer/array duality
@@ -153,10 +161,22 @@ struct Type
     // array
     int array_len;
 
+    // struct
+    Member *members;
+
     // Function type
     Type *return_ty;
     Type *params;
     Type *next;
+};
+
+// struct member
+struct Member
+{
+    Member *next;
+    Type *ty;
+    Token *name;
+    int offset;
 };
 
 extern Type *ty_char;
@@ -171,3 +191,4 @@ Type *array_of(Type *base, int size);
 
 // codegen.c
 void codegen(Obj *prog, FILE *out);
+int align_to(int n, int align);

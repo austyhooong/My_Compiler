@@ -56,6 +56,7 @@ static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 static Node *postfix(Token **rest, Token *tok);
+static Type *struct_decl(Token **rest, Token *tok);
 
 // nested scope can access external scope
 static void enter_scope(void)
@@ -188,7 +189,7 @@ static int get_number(Token *tok)
     return tok->val;
 }
 
-// declspec = "char" | "int" (type)
+// declspec = "char" | "int" (type) | struct-decl
 static Type *declspec(Token **rest, Token *tok)
 {
     if (equal(tok, "char"))
@@ -196,8 +197,17 @@ static Type *declspec(Token **rest, Token *tok)
         *rest = tok->next;
         return ty_char;
     }
-    *rest = skip(tok, "int");
-    return ty_int;
+
+    if (equal(tok, "int"))
+    {
+        *rest = skip(tok, "int");
+        return ty_int;
+    }
+
+    if (equal(tok, "struct"))
+        return struct_decl(rest, tok->next);
+
+    error_tok(tok, "expected typename");
 }
 
 // func-params = "(" (param ("," param)*)? ")"
@@ -295,7 +305,7 @@ static Node *declaration(Token **rest, Token *tok)
 // return true if a give token represents a type
 static bool is_typename(Token *tok)
 {
-    return equal(tok, "char") || equal(tok, "int");
+    return equal(tok, "char") || equal(tok, "int") || equal(tok, "struct");
 }
 
 // stmt = "return" expr ";"
@@ -473,6 +483,7 @@ static Node *relational(Token **rest, Token *tok)
     }
 }
 
+// pointer arithmatic
 // Within C, "+" is overloaded to perform the pointer arithmetic.
 // If P is a pointer, p + n, n * (sizeof(*p)) is added instead
 // Following function accomodates the above distinction
@@ -485,6 +496,7 @@ static Node *new_add(Node *lhs, Node *rhs, Token *tok)
     {
         return new_binary(ND_ADD, lhs, rhs, tok);
     }
+    // pointer + pointer is not allowed
     if (lhs->ty->base && rhs->ty->base)
     {
         error_tok(tok, "invalid operands");
@@ -596,22 +608,110 @@ static Node *unary(Token **rest, Token *tok)
     return postfix(rest, tok);
 }
 
-// postfix = primary("[" expr "]")*
+// struct-member = (declspec declarator ("," declarator)* ";")*
+static void struct_members(Token **rest, Token *tok, Type *ty)
+{
+    Member head = {};
+    Member *cur = &head;
+
+    while (!equal(tok, "}"))
+    {
+        Type *basety = declspec(&tok, tok);
+        int i = 0;
+
+        while (!consume(&tok, tok, ";"))
+        {
+            if (i++)
+            {
+                tok = skip(tok, ",");
+            }
+
+            Member *mem = calloc(1, sizeof(Member));
+            mem->ty = declarator(&tok, tok, basety);
+            mem->name = mem->ty->name;
+            cur = cur->next = mem;
+        }
+    }
+
+    *rest = tok->next;
+    ty->members = head.next;
+}
+
+// struct-decl = "{" struct-members
+static Type *struct_decl(Token **rest, Token *tok)
+{
+    tok = skip(tok, "{");
+
+    // construct a struct object
+    Type *ty = calloc(1, sizeof(Type));
+    ty->kind = TY_STRUCT;
+    struct_members(rest, tok, ty);
+    ty->align = 1;
+
+    // assign offsets within the struct to members
+    int offset = 0;
+    for (Member *mem = ty->members; mem; mem = mem->next)
+    {
+        offset = align_to(offset, mem->ty->align);
+        mem->offset = offset;
+        offset += mem->ty->size;
+
+        // align based on the biggest size of members
+        if (ty->align < mem->ty->align)
+            ty->align = mem->ty->align;
+    }
+    ty->size = align_to(offset, ty->align);
+    return ty;
+}
+
+static Member *get_struct_member(Type *ty, Token *tok)
+{
+    for (Member *mem = ty->members; mem; mem = mem->next)
+        if (mem->name->len == tok->len && !strncmp(mem->name->loc, tok->loc, tok->len))
+            return mem;
+    error_tok(tok, "no such member");
+}
+
+// create node for the struct member (tok); struct and its member "type" have been created in lhs during declspec
+static Node *struct_ref(Node *lhs, Token *tok)
+{
+    add_type(lhs);
+    if (lhs->ty->kind != TY_STRUCT)
+        error_tok(lhs->tok, "not a struct");
+
+    Node *node = new_unary(ND_MEMBER, lhs, tok);
+    node->member = get_struct_member(lhs->ty, tok);
+    return node;
+}
+
+// postfix = primary( "[" expr "]" )*
 static Node *postfix(Token **rest, Token *tok)
 {
     Node *node = primary(&tok, tok);
 
-    while (equal(tok, "["))
+    for (;;)
     {
-        // x[y] => *(x + y);
-        Token *start = tok;
-        Node *idx = expr(&tok, tok->next);
-        tok = skip(tok, "]");
-        node = new_unary(ND_DEREF, new_add(node, idx, start), start);
+        if (equal(tok, "["))
+        {
+            // x[y] => *(x + y);
+            Token *start = tok;
+            Node *idx = expr(&tok, tok->next);
+            tok = skip(tok, "]");
+            node = new_unary(ND_DEREF, new_add(node, idx, start), start);
+            continue;
+        }
+        else if (equal(tok, "."))
+        {
+            node = struct_ref(node, tok->next);
+            tok = tok->next->next;
+            continue;
+        }
+        *rest = tok;
+        return node;
     }
-    *rest = tok;
-    return node;
 }
+
+// when a function is called (this is defined somewhere else)
 // funcall = ident "(" (assign ("," assign)*)? ")"
 static Node *funcall(Token **rest, Token *tok)
 {
@@ -702,6 +802,7 @@ static void create_param_lvars(Type *param)
     }
 }
 
+// declaration/definition of function
 static Token *function(Token *tok, Type *basety)
 {
     Type *ty = declarator(&tok, tok, basety);

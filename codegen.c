@@ -66,10 +66,9 @@ static void pop(char *arg)
     --depth;
 }
 
-// align to nearest multiple of given align
-// -1 to ensure the exact align stays the same
-// ex n = 8, align = 8 => (8 + 8 - 1) / 8 * 8 = 8
-static int align_to(int n, int align)
+// round up 'n' to the nearest multiple of 'align'.
+// ex: align_to(5, 8) returns 8 and align_to(11, 8) returns 16
+int align_to(int n, int align)
 {
     return (n + align - 1) / align * align;
 }
@@ -97,6 +96,10 @@ static void gen_addr(Node *node)
         gen_expr(node->lhs);
         gen_addr(node->rhs);
         return;
+    case ND_MEMBER:
+        gen_addr(node->lhs);
+        println("  add $%d, %%rax", node->member->offset);
+        return;
     }
 
     error_tok(node->tok, "not an lvalue");
@@ -119,7 +122,8 @@ static void load(Type *ty)
 }
 
 // store %rax to an address that the stack top is pointing to
-static void store(Type *ty)
+static void
+store(Type *ty)
 {
     pop("%rdi");
 
@@ -142,6 +146,7 @@ static void gen_expr(Node *node)
         println("    neg %%rax");
         return;
     case ND_VAR:
+    case ND_MEMBER:
         gen_addr(node);
         load(node->ty);
         return;

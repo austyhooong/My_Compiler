@@ -46,9 +46,9 @@ $(OBJS): au_cc.h
 # -P: omit the line directives (contains line number and used for debugging)
 # -C: retain the comments in the preprocessed code
 # -xc: specifies the source file extension as c file
-
 # pass test c soure files as input to ./au_cc to convert it to assembly
 # ASSERT is defined in test/common which compares the second argument which has been parsed by the compiler with given input
+
 test/%.exe: au_cc test/%.c
 	$(CC) -o- -E -P -C test/$*.c | ./au_cc -o test/$*.s -
 	$(CC) -o $@ test/$*.s -xc test/common
