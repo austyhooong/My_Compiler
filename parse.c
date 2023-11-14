@@ -27,16 +27,31 @@ struct Var_scope
     Obj *var;
 };
 
+// scope for struct tags
+typedef struct TagScope TagScope;
+struct TagScope
+{
+    TagScope *next;
+    char *name;
+    Type *ty;
+};
 // represents a block scope
 typedef struct Scope Scope;
 struct Scope
 {
     Scope *next;
+
+    // C has 2 block copes:
+    // 1) varialbes
+    // 2) struct tags
     Var_scope *vars;
+    TagScope *tags;
 };
 
 // all local variable instances created
 static Obj *locals;
+
+// all global variables
 static Obj *globals;
 
 static Scope *scope = &(Scope){};
@@ -82,6 +97,18 @@ static Obj *find_var(Token *tok)
     return NULL;
 }
 
+static Type *find_tag(Token *tok)
+{
+    for (Scope *sc = scope; sc; sc = sc->next)
+    {
+        for (TagScope *sc2 = sc->tags; sc2; sc2 = sc2->next)
+        {
+            if (equal(tok, sc2->name))
+                return sc2->ty;
+        }
+    }
+    return NULL;
+}
 static Node *new_node(NodeKind kind, Token *tok)
 {
     Node *node = calloc(1, sizeof(Node));
@@ -187,6 +214,15 @@ static int get_number(Token *tok)
     if (tok->kind != TK_NUM)
         error_tok(tok, "expected a number");
     return tok->val;
+}
+
+static void push_tag_scope(Token *tok, Type *ty)
+{
+    TagScope *sc = calloc(1, sizeof(TagScope));
+    sc->name = strndup(tok->loc, tok->len);
+    sc->ty = ty;
+    sc->next = scope->tags;
+    scope->tags = sc;
 }
 
 // declspec = "char" | "int" (type) | struct-decl
@@ -383,6 +419,7 @@ static Node *compound_stmt(Token **rest, Token *tok)
 
     while (!equal(tok, "}"))
     {
+        // declaration
         if (is_typename(tok))
             cur = cur->next = declaration(&tok, tok);
         else
@@ -637,15 +674,30 @@ static void struct_members(Token **rest, Token *tok, Type *ty)
     ty->members = head.next;
 }
 
-// struct-decl = "{" struct-members
+// struct-decl = ident? "{" struct-members
 static Type *struct_decl(Token **rest, Token *tok)
 {
-    tok = skip(tok, "{");
+    // read a struct tag
+    Token *tag = NULL;
+    if (tok->kind == TK_IDENT)
+    {
+        tag = tok;
+        tok = tok->next;
+    }
+
+    if (tag && !equal(tok, "{"))
+    {
+        Type *ty = find_tag(tag);
+        if (!ty)
+            error_tok(tag, "unkown struct tag");
+        *rest = tok;
+        return ty;
+    }
 
     // construct a struct object
     Type *ty = calloc(1, sizeof(Type));
     ty->kind = TY_STRUCT;
-    struct_members(rest, tok, ty);
+    struct_members(rest, tok->next, ty);
     ty->align = 1;
 
     // assign offsets within the struct to members
@@ -661,6 +713,10 @@ static Type *struct_decl(Token **rest, Token *tok)
             ty->align = mem->ty->align;
     }
     ty->size = align_to(offset, ty->align);
+
+    // register the struct type if a name was given
+    if (tag)
+        push_tag_scope(tag, ty);
     return ty;
 }
 
