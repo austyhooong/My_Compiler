@@ -347,8 +347,7 @@ static bool is_typename(Token *tok)
 // stmt = "return" expr ";"
 //     || "if" "(" expr ")" stmt "else" stmt
 //     || "for" "(" expr-stmt ";" expr? ";" expr? ")" stmt
-static Node *
-stmt(Token **rest, Token *tok)
+static Node *stmt(Token **rest, Token *tok)
 {
     if (equal(tok, "return"))
     {
@@ -740,7 +739,7 @@ static Node *struct_ref(Node *lhs, Token *tok)
     return node;
 }
 
-// postfix = primary( "[" expr "]" )*
+// postfix = primary( "[" expr "]" | "." ident | "->" ident)*
 static Node *postfix(Token **rest, Token *tok)
 {
     Node *node = primary(&tok, tok);
@@ -756,8 +755,16 @@ static Node *postfix(Token **rest, Token *tok)
             node = new_unary(ND_DEREF, new_add(node, idx, start), start);
             continue;
         }
-        else if (equal(tok, "."))
+        if (equal(tok, "."))
         {
+            node = struct_ref(node, tok->next);
+            tok = tok->next->next;
+            continue;
+        }
+        if (equal(tok, "->"))
+        {
+            // x->y is tantamount to (*x).y
+            node = new_unary(ND_DEREF, node, tok);
             node = struct_ref(node, tok->next);
             tok = tok->next->next;
             continue;
@@ -793,7 +800,7 @@ static Node *funcall(Token **rest, Token *tok)
 }
 
 // primary = "(" "{" stmt+ "}" ")"
-//           "(" expr ")" | "sizeof" unary | ident fund-args? | num
+//           "(" expr ")" | "sizeof" unary | ident func-args? | num
 static Node *primary(Token **rest, Token *tok)
 {
     if (equal(tok, "(") && equal(tok->next, "{"))

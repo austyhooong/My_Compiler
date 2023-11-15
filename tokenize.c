@@ -141,8 +141,13 @@ static int parse_hex(char c)
 }
 static int read_op(char *p)
 {
-    if (start_with(p, "==") || start_with(p, "<=") || start_with(p, "!=") || start_with(p, ">="))
-        return 2;
+    static char *keyword[] = {"==", "!=", "<=", ">=", "->"};
+
+    for (int i = 0; i < sizeof(keyword) / sizeof(*keyword); ++i)
+    {
+        if (start_with(p, keyword[i]))
+            return strlen(keyword[i]);
+    }
     return ispunct(*p) ? 1 : 0;
 }
 
