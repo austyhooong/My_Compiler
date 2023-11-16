@@ -5,7 +5,9 @@
 // rax : accmulator
 // rcx : counter
 // rip : instrution pointer referring to the the next assembly instruction below
-// a(&rip): calculate rel32 displacement to reach a from rip
+// rdi : first argument
+// rsi, rdx, rcx, r8, r9 : second argument...
+// a(%rip): calculate rel32 displacement to reach global variable a from rip
 
 // mov (b (byte), w (2byte), l(4byte), q(8byte))
 /*
@@ -108,9 +110,10 @@ static void gen_addr(Node *node)
 // load a value from where &rax is pointing to
 static void load(Type *ty)
 {
-    if (ty->kind == TY_ARRAY)
+    if (ty->kind == TY_ARRAY || ty->kind == TY_STRUCT || ty->kind == TY_UNION)
     {
         // cannot load value of entire array thus convert it to a pointer referencing the first element of array
+        // array decay occurs here
         return;
     }
     if (ty->size == 1)
@@ -127,6 +130,15 @@ store(Type *ty)
 {
     pop("%rdi");
 
+    if (ty->kind == TY_STRUCT || ty->kind == TY_UNION)
+    {
+        for (int i = 0; i < ty->size; ++i)
+        {
+            println("   mov %d(%%rax), %%r8b", i);
+            println("   mov %%r8b, %d(%%rdi)", i);
+        }
+        return;
+    }
     if (ty->size == 1)
         println("    mov %%al, (%%rdi)");
     else
@@ -158,8 +170,8 @@ static void gen_expr(Node *node)
         gen_addr(node->lhs);
         return;
     case ND_ASSIGN:
-        gen_addr(node->lhs);
-        push(); // push rax to top of stack
+        gen_addr(node->lhs); // lhs is stored in rax
+        push();              // push rax to top of stack
         gen_expr(node->rhs);
         store(node->ty);
         return;
