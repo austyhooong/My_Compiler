@@ -162,7 +162,8 @@ static bool is_keyword(Token *tok)
         "int",
         "sizeof",
         "char",
-        "struct"};
+        "struct",
+        "union"};
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); ++i)
     {
