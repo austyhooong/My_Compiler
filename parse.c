@@ -133,7 +133,7 @@ static Node *new_unary(NodeKind kind, Node *expr, Token *tok)
     return node;
 }
 
-static Node *new_num(int val, Token *tok)
+static Node *new_num(int64_t val, Token *tok)
 {
     Node *node = new_node(ND_NUM, tok);
     node->val = val;
@@ -226,7 +226,7 @@ static void push_tag_scope(Token *tok, Type *ty)
     scope->tags = sc;
 }
 
-// declspec = "char" | "int" (type) | struct-union-decl
+// declspec (type) = "char" | "short" | "int" | "long" | struct-decl | union-decl
 static Type *declspec(Token **rest, Token *tok)
 {
     if (equal(tok, "char"))
@@ -241,6 +241,11 @@ static Type *declspec(Token **rest, Token *tok)
         return ty_int;
     }
 
+    if (equal(tok, "long"))
+    {
+        *rest = tok->next;
+        return ty_long;
+    }
     if (equal(tok, "struct"))
         return struct_decl(rest, tok->next);
 
@@ -345,7 +350,7 @@ static Node *declaration(Token **rest, Token *tok)
 // return true if a give token represents a type
 static bool is_typename(Token *tok)
 {
-    return equal(tok, "char") || equal(tok, "int") || equal(tok, "struct") || equal(tok, "union");
+    return equal(tok, "char") || equal(tok, "int") || equal(tok, "long") || equal(tok, "struct") || equal(tok, "union") || equal(tok, "short");
 }
 
 // stmt = "return" expr ";"

@@ -54,6 +54,8 @@ int main()
 
   // parameters are pushed to the stack in reverse order (x is at the lowest address): b at address -24 and a at address -25
   ASSERT(1, ({ int x; char y; int z; char *a = &y; char *b = &z; b - a; }));
+
+  ASSERT(8, ({ long x; sizeof(x); }));
   printf("OK\n");
   return 0;
 }

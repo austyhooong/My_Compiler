@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 
 // string.c
 
@@ -32,11 +33,11 @@ struct Token
 {
     TokenKind kind;
     Token *next;
-    int val;   // if TK_NUM
-    char *loc; // token location
-    int len;   // token len (ex: length of the integer (123 => 3))
-    Type *ty;  // for TK_STR
-    char *str; // string literal with terminating '\0'
+    int64_t val; // if TK_NUM (int64_t = exactly 64 bits)
+    char *loc;   // token location
+    int len;     // token len (ex: length of the integer (123 => 3))
+    Type *ty;    // for TK_STR
+    char *str;   // string literal with terminating '\0'
 
     int line_num; // line number
 };
@@ -111,7 +112,7 @@ struct Node
     Token *tok; // representative token
     Node *lhs;
     Node *rhs;
-    int val;
+    int64_t val;
     Obj *var; // kind == ND_VAR
 
     // block || statement expression
@@ -138,6 +139,7 @@ typedef enum
 {
     TY_CHAR,
     TY_INT,
+    TY_LONG,
     TY_PTR,
     TY_FUNC,
     TY_ARRAY,
@@ -183,6 +185,7 @@ struct Member
 
 extern Type *ty_char;
 extern Type *ty_int;
+extern Type *ty_long;
 
 bool is_integer(Type *ty);
 Type *copy_type(Type *ty);
