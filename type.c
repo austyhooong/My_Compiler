@@ -1,6 +1,6 @@
 #include "au_cc.h"
 
-Type *ty_int = &(Type){TY_INT, 8, 8}; // initialize the first member of Type (typekind) to TY_INT
+Type *ty_int = &(Type){TY_INT, 4, 4}; // initialize the first member of Type (typekind) to TY_INT
 Type *ty_char = &(Type){TY_CHAR, 1, 1};
 
 static Type *new_type(TypeKind kind, int size, int align)
@@ -108,6 +108,7 @@ void add_type(Node *node)
             error_tok(node->tok, "invalid pointer dereference");
         node->ty = node->lhs->ty->base;
         return;
+    // type same as the final expression within the statement expression
     case ND_STMT_EXPR:
         if (node->body)
         {

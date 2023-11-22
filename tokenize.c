@@ -9,7 +9,7 @@ static char *current_input;
 void error(char *fmt, ...)
 {
     va_list ap;
-    va_start(ap, fmt); // initializes ap to arguments after fmt
+    va_start(ap, fmt); // initializes ap to arguments after fmt which contains string fomrat specifier % for each ...
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
@@ -35,7 +35,7 @@ static void verror_at(int line_num, char *loc, char *fmt, va_list ap)
     int indent = fprintf(stderr, "%s:%d: ", current_filename, line_num);
 
     // x = y + 1;
-    fprintf(stderr, "%.*s\n", (int)(end - line), line);
+    fprintf(stderr, "%.*s\n", (int)(end - line), line); // * passes width specifier; . speficies that truncation is possible
 
     // show the error message
     int pos = loc - line + indent;
@@ -175,7 +175,7 @@ static bool is_keyword(Token *tok)
 
 static int read_escaped_ch(char **new_pos, char *p)
 {
-    // octal number starts with \ and followed by at most 3 digits (must be less than 8)
+    // octal number: starts with \ and followed by at most 3 digits (must be less than 8)
     if ('0' <= *p && *p <= '7')
     {
         // read an octal number
@@ -213,7 +213,7 @@ static int read_escaped_ch(char **new_pos, char *p)
 
     // string literals are read as it is
     // escaped characters are inheritantly interpreted by the compiler
-    // thus no post-processing is
+    // thus no post-processing is needed
     switch (*p)
     {
     case 'a':
@@ -395,6 +395,7 @@ static char *read_file(char *path)
 
     char *buf;
     size_t buflen;
+
     // dynamically open a stream for writing to a memory buffer (&buf)
     // updated upon fflush or fclose
     FILE *out = open_memstream(&buf, &buflen);

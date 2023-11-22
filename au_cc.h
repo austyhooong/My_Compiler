@@ -50,6 +50,8 @@ bool consume(Token **rest, Token *tok, char *str);
 Token *
 tokenize_file(char *filename);
 
+#define unreachable() \
+    error("internal error at %s:%d", __FILE__, __LINE__);
 // parse.c
 
 // variable or function
@@ -153,7 +155,6 @@ struct Type
     // pointer to or array of type.
     // same member is used to represent pointer/array duality
     // for resolution of a pointer, this member is examined instead of kind member to determine the equivalence of pointer thus array of T is treated as a pointer to T as required by the C spec
-    // pointer
     Type *base;
 
     // declaration

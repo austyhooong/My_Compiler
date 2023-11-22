@@ -170,7 +170,7 @@ static Obj *new_lvar(char *name, Type *ty)
 {
     Obj *var = new_var(name, ty);
     var->is_local = true;
-    var->next = locals; // create linked list of up to 6 arguments
+    var->next = locals;
     var->ty = ty;
     locals = var;
     return var;
@@ -226,7 +226,7 @@ static void push_tag_scope(Token *tok, Type *ty)
     scope->tags = sc;
 }
 
-// declspec = "char" | "int" (type) | struct-decl
+// declspec = "char" | "int" (type) | struct-union-decl
 static Type *declspec(Token **rest, Token *tok)
 {
     if (equal(tok, "char"))
@@ -885,6 +885,7 @@ static Node *primary(Token **rest, Token *tok)
     error_tok(tok, "unexpected expression");
 }
 
+// created in reverse order
 static void create_param_lvars(Type *param)
 {
     if (param)
