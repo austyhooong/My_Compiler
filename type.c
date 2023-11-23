@@ -2,6 +2,7 @@
 
 Type *ty_int = &(Type){TY_INT, 4, 4}; // initialize the first member of Type (typekind) to TY_INT
 Type *ty_char = &(Type){TY_CHAR, 1, 1};
+Type *ty_short = &(Type){TY_SHORT, 2, 2};
 Type *ty_long = &(Type){TY_LONG, 8, 8};
 
 static Type *new_type(TypeKind kind, int size, int align)
@@ -16,7 +17,7 @@ static Type *new_type(TypeKind kind, int size, int align)
 bool is_integer(Type *ty)
 {
     TypeKind tk = ty->kind;
-    return tk == TY_CHAR || tk == TY_LONG || tk == TY_INT;
+    return tk == TY_CHAR || tk == TY_LONG || tk == TY_INT || tk == TY_SHORT;
 }
 
 Type *copy_type(Type *ty)

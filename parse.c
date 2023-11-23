@@ -241,6 +241,12 @@ static Type *declspec(Token **rest, Token *tok)
         return ty_int;
     }
 
+    if (equal(tok, "short"))
+    {
+        *rest = skip(tok, "short");
+        return ty_short;
+    }
+
     if (equal(tok, "long"))
     {
         *rest = tok->next;
