@@ -1,8 +1,8 @@
 #include "au_cc.h"
 
-static char *opt_o;
+static char* opt_o;
 
-static char *input_path;
+static char* input_path;
 
 static void usage(int status)
 {
@@ -10,7 +10,7 @@ static void usage(int status)
     exit(status);
 }
 
-static void parse_args(int argc, char **argv)
+static void parse_args(int argc, char** argv)
 {
     for (int i = 1; i < argc; ++i)
     {
@@ -43,29 +43,29 @@ static void parse_args(int argc, char **argv)
         error("no input files");
 }
 
-static FILE *open_file(char *path)
+static FILE* open_file(char* path)
 {
     if (!path || strcmp(path, "-") == 0)
         return stdout;
 
     // create a new file; if the file exists, its replaced
-    FILE *out = fopen(path, "w");
+    FILE* out = fopen(path, "w");
     if (!out)
         error("cannot open output file: %s: %s", path, strerror(errno));
     return out;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv) 
 {
     parse_args(argc, argv);
     // printf("    mov $%ld, %%rax\n", get_number(tok)); // strtol converts the beginning of operations into long int and stores the rest of them in &operations)
 
     // tokenize and parse
-    Token *tok = tokenize_file(input_path);
-    Obj *prog = parse(tok);
+    Token* tok = tokenize_file(input_path);
+    Obj* prog = parse(tok);
 
     // traverse the AST to generate assembly code
-    FILE *out = open_file(opt_o);
+    FILE* out = open_file(opt_o);
     fprintf(out, ".file 1 \"%s\"\n", input_path);
     codegen(prog, out);
     return 0;
