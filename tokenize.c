@@ -1,12 +1,12 @@
 #include "au_cc.h"
 
 // input filename
-static char *current_filename;
+static char* current_filename;
 
 // input string
-static char *current_input;
+static char* current_input;
 
-void error(char *fmt, ...)
+void error(char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt); // initializes ap to arguments after fmt which contains string fomrat specifier % for each ...
@@ -20,14 +20,14 @@ void error(char *fmt, ...)
 //  foo.c:10: x = y + 1;
 //                ^ <error message>
 
-static void verror_at(int line_num, char *loc, char *fmt, va_list ap)
+static void verror_at(int line_num, char* loc, char* fmt, va_list ap)
 {
     // find a beginning of the loc
-    char *line = loc;
+    char* line = loc;
     while (current_input < line && line[-1] != '\n')
         line--;
 
-    char *end = loc;
+    char* end = loc;
     while (*end != '\n')
         ++end;
 
@@ -47,10 +47,10 @@ static void verror_at(int line_num, char *loc, char *fmt, va_list ap)
     exit(1);
 }
 
-void error_at(char *loc, char *fmt, ...)
+void error_at(char* loc, char* fmt, ...)
 {
     int line_num = 1;
-    for (char *p = current_input; p < loc; ++p)
+    for (char* p = current_input; p < loc; ++p)
         if (*p == '\n')
             ++line_num;
 
@@ -59,19 +59,19 @@ void error_at(char *loc, char *fmt, ...)
     verror_at(line_num, loc, fmt, ap);
 }
 
-void error_tok(Token *tok, char *fmt, ...)
+void error_tok(Token* tok, char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
     verror_at(tok->line_num, tok->loc, fmt, ap);
 }
 
-bool equal(Token *tok, char *op)
+bool equal(Token* tok, char* op)
 {
     return memcmp(tok->loc, op, tok->len) == 0 && op[tok->len] == '\0'; // memcmp: compares the first tok->len bytes
 }
 
-Token *skip(Token *tok, char *s)
+Token* skip(Token* tok, char* s)
 {
     if (!equal(tok, s))
     {
@@ -80,7 +80,7 @@ Token *skip(Token *tok, char *s)
     return tok->next;
 }
 
-bool consume(Token **rest, Token *tok, char *str)
+bool consume(Token** rest, Token* tok, char* str)
 {
     if (equal(tok, str))
     {
@@ -92,16 +92,16 @@ bool consume(Token **rest, Token *tok, char *str)
     return false;
 }
 
-static int get_number(Token *tok)
+static int get_number(Token* tok)
 {
     if (tok->kind != TK_NUM)
         error_tok(tok, "expected a number");
     return tok->val;
 }
 
-Token *new_token(TokenKind kind, char *start, char *end)
+Token* new_token(TokenKind kind, char* start, char* end)
 {
-    Token *tok = calloc(1, sizeof(Token));
+    Token* tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->loc = start;
     tok->len = end - start;
@@ -113,7 +113,7 @@ Token *new_token(TokenKind kind, char *start, char *end)
 //     return *op == '<' || *op == '>' || *op == '+' || *op == '-' || *op == '/' || *op == '*' || *op == '(' || *op == ')';
 // }
 
-static bool start_with(char *p, char *q)
+static bool start_with(char* p, char* q)
 {
     return strncmp(p, q, strlen(q)) == 0;
 }
@@ -139,9 +139,9 @@ static int parse_hex(char c)
         return c - 'a' + 10;
     return c - 'A' + 10;
 }
-static int read_op(char *p)
+static int read_op(char* p)
 {
-    static char *keyword[] = {"==", "!=", "<=", ">=", "->"};
+    static char* keyword[] = { "==", "!=", "<=", ">=", "->" };
 
     for (int i = 0; i < sizeof(keyword) / sizeof(*keyword); ++i)
     {
@@ -151,9 +151,10 @@ static int read_op(char *p)
     return ispunct(*p) ? 1 : 0;
 }
 
-static bool is_keyword(Token *tok)
+static bool is_keyword(Token* tok)
 {
-    static char *kw[] = {
+    static char* kw[] = {
+        "void",
         "return",
         "if",
         "else",
@@ -165,7 +166,7 @@ static bool is_keyword(Token *tok)
         "sizeof",
         "char",
         "struct",
-        "union"};
+        "union" };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); ++i)
     {
@@ -175,7 +176,7 @@ static bool is_keyword(Token *tok)
     return false;
 }
 
-static int read_escaped_ch(char **new_pos, char *p)
+static int read_escaped_ch(char** new_pos, char* p)
 {
     // octal number: starts with \ and followed by at most 3 digits (must be less than 8)
     if ('0' <= *p && *p <= '7')
@@ -240,9 +241,9 @@ static int read_escaped_ch(char **new_pos, char *p)
 }
 
 // find closing double-quote
-static char *string_literal_end(char *p)
+static char* string_literal_end(char* p)
 {
-    char *start = p;
+    char* start = p;
     for (; *p != '"'; ++p)
     {
         if (*p == '\n' || *p == '\0')
@@ -253,13 +254,13 @@ static char *string_literal_end(char *p)
     return p;
 }
 
-static Token *read_string_literal(char *start)
+static Token* read_string_literal(char* start)
 {
-    char *end = string_literal_end(start + 1);
-    char *buf = calloc(1, end - start);
+    char* end = string_literal_end(start + 1);
+    char* buf = calloc(1, end - start);
     int len = 0;
 
-    for (char *p = start + 1; p < end;)
+    for (char* p = start + 1; p < end;)
     {
         // escape characters within string must be explicitly parsed
         if (*p == '\\')
@@ -272,15 +273,15 @@ static Token *read_string_literal(char *start)
         }
     }
 
-    Token *tok = new_token(TK_STR, start, end + 1); // store "..."
+    Token* tok = new_token(TK_STR, start, end + 1); // store "..."
     tok->ty = array_of(ty_char, len + 1);
     tok->str = buf;
     return tok;
 }
 
-static void convert_keywords(Token *tok)
+static void convert_keywords(Token* tok)
 {
-    for (Token *t = tok; t->kind != TK_EOF; t = t->next)
+    for (Token* t = tok; t->kind != TK_EOF; t = t->next)
     {
         if (is_keyword(t))
             t->kind = TK_KEYWORD;
@@ -289,9 +290,9 @@ static void convert_keywords(Token *tok)
 
 // initialize line number into all the tokens
 // -> finds a line number by parsing the entire current input from the beginning
-static void add_line_numbers(Token *tok)
+static void add_line_numbers(Token* tok)
 {
-    char *p = current_input;
+    char* p = current_input;
     int num = 1;
 
     do
@@ -306,12 +307,12 @@ static void add_line_numbers(Token *tok)
     } while (*p++);
 }
 
-static Token *tokenize(char *filename, char *p)
+static Token* tokenize(char* filename, char* p)
 {
     current_filename = filename;
     current_input = p;
     Token head = {};
-    Token *cur = &head;
+    Token* cur = &head;
 
     while (*p)
     {
@@ -327,7 +328,7 @@ static Token *tokenize(char *filename, char *p)
         // skip block comments
         if (start_with(p, "/*"))
         {
-            char *end = strstr(p + 2, "*/");
+            char* end = strstr(p + 2, "*/");
             if (!end)
                 error_at(p, "unclosed block comment");
             p = end + 2;
@@ -340,7 +341,7 @@ static Token *tokenize(char *filename, char *p)
         else if (isdigit(*p))
         {
             cur = cur->next = new_token(TK_NUM, p, p);
-            char *q = p;
+            char* q = p;
             cur->val = strtoul(p, &p, 10);
             cur->len = p - q;
         }
@@ -352,7 +353,7 @@ static Token *tokenize(char *filename, char *p)
         // identifier | keyword
         else if (is_ident_letter(*p))
         {
-            char *start = p;
+            char* start = p;
             do
             {
                 ++p;
@@ -376,9 +377,9 @@ static Token *tokenize(char *filename, char *p)
 }
 
 // return the contents of the given file
-static char *read_file(char *path)
+static char* read_file(char* path)
 {
-    FILE *fp;
+    FILE* fp;
 
     // by convention, "-" refers to stdin
     if (strcmp(path, "-") == 0)
@@ -395,12 +396,12 @@ static char *read_file(char *path)
         }
     }
 
-    char *buf;
+    char* buf;
     size_t buflen;
 
     // dynamically open a stream for writing to a memory buffer (&buf)
     // updated upon fflush or fclose
-    FILE *out = open_memstream(&buf, &buflen);
+    FILE* out = open_memstream(&buf, &buflen);
 
     // read the entire file
     for (;;)
@@ -429,8 +430,8 @@ static char *read_file(char *path)
     return buf;
 }
 
-Token *tokenize_file(char *path)
+Token* tokenize_file(char* path)
 {
-    char *p = read_file(path);
+    char* p = read_file(path);
     return tokenize(path, p);
 }

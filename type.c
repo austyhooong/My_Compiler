@@ -1,56 +1,57 @@
 #include "au_cc.h"
 
-Type *ty_int = &(Type){TY_INT, 4, 4}; // initialize the first member of Type (typekind) to TY_INT
-Type *ty_char = &(Type){TY_CHAR, 1, 1};
-Type *ty_short = &(Type){TY_SHORT, 2, 2};
-Type *ty_long = &(Type){TY_LONG, 8, 8};
+Type* ty_void = &(Type) { TY_VOID, 1, 1 };
+Type* ty_int = &(Type) { TY_INT, 4, 4 }; // initialize the first member of Type (typekind) to TY_INT
+Type* ty_char = &(Type) { TY_CHAR, 1, 1 };
+Type* ty_short = &(Type) { TY_SHORT, 2, 2 };
+Type* ty_long = &(Type) { TY_LONG, 8, 8 };
 
-static Type *new_type(TypeKind kind, int size, int align)
+static Type* new_type(TypeKind kind, int size, int align)
 {
-    Type *ty = calloc(1, sizeof(Type)); // calloc(num_of_element_allocated, size_of_each_element) all initialized to zero
+    Type* ty = calloc(1, sizeof(Type)); // calloc(num_of_element_allocated, size_of_each_element) all initialized to zero
     ty->kind = kind;
     ty->size = size;
     ty->align = align;
     return ty;
 }
 
-bool is_integer(Type *ty)
+bool is_integer(Type* ty)
 {
     TypeKind tk = ty->kind;
     return tk == TY_CHAR || tk == TY_LONG || tk == TY_INT || tk == TY_SHORT;
 }
 
-Type *copy_type(Type *ty)
+Type* copy_type(Type* ty)
 {
-    Type *ret = calloc(1, sizeof(Type));
+    Type* ret = calloc(1, sizeof(Type));
     *ret = *ty;
     return ret;
 }
 
-Type *pointer_to(Type *base)
+Type* pointer_to(Type* base)
 {
-    Type *ty = new_type(TY_PTR, 8, 8);
+    Type* ty = new_type(TY_PTR, 8, 8);
     ty->base = base;
     return ty;
 }
 
-Type *func_type(Type *return_ty)
+Type* func_type(Type* return_ty)
 {
-    Type *ty = calloc(1, sizeof(Type));
+    Type* ty = calloc(1, sizeof(Type));
     ty->kind = TY_FUNC;
     ty->return_ty = return_ty;
     return ty;
 }
 
-Type *array_of(Type *base, int len)
+Type* array_of(Type* base, int len)
 {
-    Type *ty = new_type(TY_ARRAY, base->size * len, base->align);
+    Type* ty = new_type(TY_ARRAY, base->size * len, base->align);
     ty->base = base;
     ty->array_len = len;
     return ty;
 }
 
-void add_type(Node *node)
+void add_type(Node* node)
 {
     if (!node || node->ty)
         return;
@@ -63,10 +64,10 @@ void add_type(Node *node)
     add_type(node->init);
     add_type(node->inc);
 
-    for (Node *n = node->body; n; n = n->next)
+    for (Node* n = node->body; n; n = n->next)
         add_type(n);
 
-    for (Node *n = node->args; n; n = n->next)
+    for (Node* n = node->args; n; n = n->next)
         add_type(n);
 
     switch (node->kind)
@@ -109,13 +110,16 @@ void add_type(Node *node)
     case ND_DEREF:
         if (!node->lhs->ty->base)
             error_tok(node->tok, "invalid pointer dereference");
+        if (node->lhs->ty->base->kind == TY_VOID)
+            error_tok(node->tok, "cannot dereference a void pointer");
         node->ty = node->lhs->ty->base;
         return;
-    // type same as the final expression within the statement expression
+
+        // type same as the final expression within the statement expression
     case ND_STMT_EXPR:
         if (node->body)
         {
-            Node *stmt = node->body;
+            Node* stmt = node->body;
             while (stmt->next)
                 stmt = stmt->next;
             if (stmt->kind == ND_EXPR_STMT)
