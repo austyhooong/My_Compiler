@@ -32,18 +32,18 @@
 
 #include "au_cc.h"
 
-static FILE *output_file;
+static FILE* output_file;
 static int depth;
-static char *argreg8[] = {"%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b"};
-static char *argreg16[] = {"%di", "%si", "%dx", "%cx", "%r8w", "%r9w"};
-static char *argreg32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
-static char *argreg64[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
-static Obj *current_fn;
+static char* argreg8[] = { "%dil", "%sil", "%dl", "%cl", "%r8b", "%r9b" };
+static char* argreg16[] = { "%di", "%si", "%dx", "%cx", "%r8w", "%r9w" };
+static char* argreg32[] = { "%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d" };
+static char* argreg64[] = { "%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9" };
+static Obj* current_fn;
 
-static void gen_expr(Node *node);
-static void gen_stmt(Node *node);
+static void gen_expr(Node* node);
+static void gen_stmt(Node* node);
 
-static void println(char *fmt, ...)
+static void println(char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -64,7 +64,7 @@ static void push(void)
     ++depth;
 }
 
-static void pop(char *arg)
+static void pop(char* arg)
 {
     println("    pop %s", arg);
     --depth;
@@ -77,7 +77,7 @@ int align_to(int n, int align)
     return (n + align - 1) / align * align;
 }
 
-static void gen_addr(Node *node)
+static void gen_addr(Node* node)
 {
     switch (node->kind)
     {
@@ -110,7 +110,7 @@ static void gen_addr(Node *node)
 }
 
 // load a value from where &rax is pointing to rax
-static void load(Type *ty)
+static void load(Type* ty)
 {
     if (ty->kind == TY_ARRAY || ty->kind == TY_STRUCT || ty->kind == TY_UNION)
     {
@@ -130,7 +130,7 @@ static void load(Type *ty)
 
 // store %rax to an address that the stack top is pointing to
 static void
-store(Type *ty)
+store(Type* ty)
 {
     pop("%rdi");
 
@@ -153,7 +153,7 @@ store(Type *ty)
         println("   mov %%rax, (%%rdi)");
 }
 
-static void gen_expr(Node *node)
+static void gen_expr(Node* node)
 {
     println("   .loc 1 %d", node->tok->line_num);
     switch (node->kind)
@@ -184,7 +184,7 @@ static void gen_expr(Node *node)
         store(node->ty);
         return;
     case ND_STMT_EXPR:
-        for (Node *n = node->body; n; n = n->next)
+        for (Node* n = node->body; n; n = n->next)
         {
             gen_stmt(n);
         }
@@ -196,7 +196,7 @@ static void gen_expr(Node *node)
     case ND_FUNCALL:
     {
         int num_args = 0;
-        for (Node *arg = node->args; arg; arg = arg->next)
+        for (Node* arg = node->args; arg; arg = arg->next)
         {
             gen_expr(arg);
             push();
@@ -250,7 +250,7 @@ static void gen_expr(Node *node)
     error_tok(node->tok, "invalide expression");
 }
 
-static void gen_stmt(Node *node)
+static void gen_stmt(Node* node)
 {
     println("   .loc 1 %d", node->tok->line_num);
 
@@ -290,7 +290,7 @@ static void gen_stmt(Node *node)
         return;
     }
     case ND_BLOCK:
-        for (Node *n = node->body; n; n = n->next)
+        for (Node* n = node->body; n; n = n->next)
         {
             gen_stmt(n);
         }
@@ -307,15 +307,15 @@ static void gen_stmt(Node *node)
     error_tok(node->tok, "invalid statement");
 }
 
-static void assign_lvar_offsets(Obj *prog)
+static void assign_lvar_offsets(Obj* prog)
 {
-    for (Obj *fn = prog; fn; fn = fn->next)
+    for (Obj* fn = prog; fn; fn = fn->next)
     {
         if (!fn->is_function)
             continue;
 
         int offset = 0;
-        for (Obj *var = fn->locals; var; var = var->next)
+        for (Obj* var = fn->locals; var; var = var->next)
         {
             offset += var->ty->size;
             offset = align_to(offset, var->ty->align);
@@ -325,9 +325,9 @@ static void assign_lvar_offsets(Obj *prog)
     }
 }
 
-static void emit_data(Obj *prog)
+static void emit_data(Obj* prog)
 {
-    for (Obj *var = prog; var; var = var->next)
+    for (Obj* var = prog; var; var = var->next)
     {
         if (var->is_function)
             continue;
@@ -369,11 +369,11 @@ static void store_gp(int r, int offset, int sz)
     }
 }
 
-static void emit_text(Obj *prog)
+static void emit_text(Obj* prog)
 {
-    for (Obj *func = prog; func; func = func->next)
+    for (Obj* func = prog; func; func = func->next)
     {
-        if (!func->is_function)
+        if (!func->is_function || !func->is_definition)
             continue;
         println("    .global %s", func->name);
         println("    .text");
@@ -387,7 +387,7 @@ static void emit_text(Obj *prog)
 
         // save passed-by-register arguments to the stack
         int i = 0;
-        for (Obj *var = func->params; var; var = var->next)
+        for (Obj* var = func->params; var; var = var->next)
             store_gp(i++, var->offset, var->ty->size);
 
         // emit code
@@ -401,7 +401,7 @@ static void emit_text(Obj *prog)
     }
 }
 
-void codegen(Obj *prog, FILE *out)
+void codegen(Obj* prog, FILE* out)
 {
     output_file = out;
 

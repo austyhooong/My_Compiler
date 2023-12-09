@@ -1,6 +1,7 @@
 #!/bin/bash
 # create a temp direcdtory with random name filled in X
 tmp=`mktemp -d /tmp/chibicc-test-XXXXXX`
+
 # create a default command to run when INT TEMP HUP EXIT signals are generated
 trap 'rm -rf $tmp' INT TERM HUP EXIT
 echo > $tmp/empty.c
