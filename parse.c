@@ -56,6 +56,7 @@ static Obj* globals;
 
 static Scope* scope = &(Scope) {};
 
+static bool is_typename(Token* tok);
 static Type* declspec(Token** rest, Token* tok);
 static Type* declarator(Token** rest, Token* tok, Type* ty);
 static Node* declaration(Token** rest, Token* tok);
@@ -227,43 +228,79 @@ static void push_tag_scope(Token* tok, Type* ty)
 }
 
 // declspec (type) = "void" | "char" | "short" | "int" | "long" | struct-decl | union-decl
+// the order of typename is irrelevant thus for the following function, it counts eacch typename using bits and hardcode possible combination as a bit representation to compare at the end; this hardcoding allows order agnositc comparison
 static Type* declspec(Token** rest, Token* tok)
 {
-    if (equal(tok, "void")) {
-        *rest = tok->next;
-        return ty_void;
+    enum {
+        VOID = 1 << 0,
+        CHAR = 1 << 2,
+        SHORT = 1 << 4,
+        INT = 1 << 6,
+        LONG = 1 << 8,
+        OTHER = 1 << 10
+    };
+
+    Type* ty = ty_int;
+    int counter = 0;
+
+    while (is_typename(tok)) {
+        // handles user defined types
+        if (equal(tok, "struct") || equal(tok, "union")) {
+            if (equal(tok, "struct")) {
+                ty = struct_decl(&tok, tok->next);
+            }
+            else {
+                ty = union_decl(&tok, tok->next);
+            }
+            counter += OTHER;
+            continue;
+        }
+
+        // handles built-int type
+        if (equal(tok, "void")) {
+            counter += VOID;
+        }
+        else if (equal(tok, "char")) {
+            counter += CHAR;
+        }
+        else if (equal(tok, "short")) {
+            counter += SHORT;
+        }
+        else if (equal(tok, "int")) {
+            counter += INT;
+        }
+        else if (equal(tok, "long")) {
+            counter += LONG;
+        }
+        else {
+            unreachable();
+        }
+
+        switch (counter) {
+        case VOID:
+            ty = ty_void;
+            break;
+        case CHAR:
+            ty = ty_char;
+            break;
+        case SHORT:
+        case SHORT + INT:
+            ty = ty_short;
+            break;
+        case INT:
+            ty = ty_int;
+            break;
+        case LONG:
+        case LONG + INT:
+            ty = ty_long;
+            break;
+        default:
+            error_tok(tok, "invalide type");
+        }
+        tok = tok->next;
     }
-
-    if (equal(tok, "char"))
-    {
-        *rest = tok->next;
-        return ty_char;
-    }
-
-    if (equal(tok, "int"))
-    {
-        *rest = skip(tok, "int");
-        return ty_int;
-    }
-
-    if (equal(tok, "short"))
-    {
-        *rest = skip(tok, "short");
-        return ty_short;
-    }
-
-    if (equal(tok, "long"))
-    {
-        *rest = tok->next;
-        return ty_long;
-    }
-    if (equal(tok, "struct"))
-        return struct_decl(rest, tok->next);
-
-    if (equal(tok, "union"))
-        return union_decl(rest, tok->next);
-
-    error_tok(tok, "expected typename");
+    *rest = tok;
+    return ty;
 }
 
 // func-params = "(" (param ("," param)*)? ")"
