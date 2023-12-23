@@ -118,6 +118,8 @@ static void load(Type* ty)
         // array decay occurs here
         return;
     }
+    // movs : sign extend
+    // movz : zero extend
     if (ty->size == 1)
         println("    movsbq (%%rax), %%rax"); // movsb: move one byte and sign extend to 8 bytes
     else if (ty->size == 2)
@@ -151,6 +153,43 @@ store(Type* ty)
         println("   mov %%eax, (%%rdi)");
     else
         println("   mov %%rax, (%%rdi)");
+}
+
+enum { I8, I16, I32, I64 };
+
+static int getTypeId(Type* ty) {
+    switch (ty->kind) {
+    case TY_CHAR:
+        return I8;
+    case TY_SHORT:
+        return I16;
+    case TY_INT:
+        return I32;
+    }
+    return I64;
+}
+
+// tables for type casts
+static char i32i8[] = "movsbl %al, %eax";   // moving only 8 bits to 32 bits
+static char i32i16[] = "movswl %ax, %eax";
+static char i32i64[] = "movsxd %eax, %rax";
+
+static char* cast_table[][10] = {
+    {NULL, NULL, NULL, i32i64},
+    {i32i8, NULL, NULL, i32i64},
+    {i32i8, i32i16, NULL, i32i64},
+    {i32i8, i32i16, NULL, NULL}
+};
+
+static void cast(Type* from, Type* to) {
+    if (to->kind == TY_VOID)
+        return;
+
+    int t1 = getTypeId(from);
+    int t2 = getTypeId(to);
+    if (cast_table[t1][t2]) {
+        println("   %s", cast_table[t1][t2]);
+    }
 }
 
 static void gen_expr(Node* node)
@@ -192,6 +231,10 @@ static void gen_expr(Node* node)
     case ND_COMMA:
         gen_expr(node->lhs);
         gen_expr(node->rhs);
+        return;
+    case ND_CAST:
+        gen_expr(node->lhs);
+        cast(node->lhs->ty, node->ty);
         return;
     case ND_FUNCALL:
     {

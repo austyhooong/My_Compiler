@@ -102,6 +102,7 @@ typedef enum
     ND_FOR,       // for || while statement
     ND_FUNCALL,   // function call
     ND_MEMBER,    // . (struct member access)
+    ND_CAST,      // Typecast
 } NodeKind;
 
 // abstract syntax tree
