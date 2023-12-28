@@ -149,6 +149,13 @@ static Node* new_num(int64_t val, Token* tok)
     return node;
 }
 
+static Node* new_long(int64_t val, Token* tok) {
+    Node* node = new_node(ND_NUM, tok);
+    node->val = val;
+    node->ty = ty_long;
+    return node;
+}
+
 static Node* new_var_node(Obj* var, Token* tok)
 {
     Node* node = new_node(ND_VAR, tok);
@@ -156,7 +163,7 @@ static Node* new_var_node(Obj* var, Token* tok)
     return node;
 }
 
-static Node* new_cast(Node* expr, Type* ty) {
+Node* new_cast(Node* expr, Type* ty) {
     add_type(expr);
 
     Node* node = calloc(1, sizeof(Node));
@@ -680,7 +687,7 @@ static Node* relational(Token** rest, Token* tok)
 // pointer arithmatic
 // Within C, "+" is overloaded to perform the pointer arithmetic.
 // If P is a pointer, p + n, n * (sizeof(*p)) is added instead
-// Following function accomodates the above distinction
+// The following function accomodates the above distinction
 static Node* new_add(Node* lhs, Node* rhs, Token* tok)
 {
     add_type(lhs);
@@ -704,7 +711,7 @@ static Node* new_add(Node* lhs, Node* rhs, Token* tok)
     }
 
     // ptr + (num * sizeof(*ptr))
-    rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+    rhs = new_binary(ND_MUL, rhs, new_long(lhs->ty->base->size, tok), tok);
     return new_binary(ND_ADD, lhs, rhs, tok);
 }
 
@@ -719,7 +726,7 @@ static Node* new_sub(Node* lhs, Node* rhs, Token* tok)
     // ptr - num
     if (lhs->ty->base && is_integer(rhs->ty))
     {
-        rhs = new_binary(ND_MUL, rhs, new_num(lhs->ty->base->size, tok), tok);
+        rhs = new_binary(ND_MUL, rhs, new_long(lhs->ty->base->size, tok), tok);
         add_type(rhs);
         Node* node = new_binary(ND_SUB, lhs, rhs, tok);
         node->ty = lhs->ty;

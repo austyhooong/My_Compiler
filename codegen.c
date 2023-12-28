@@ -120,10 +120,13 @@ static void load(Type* ty)
     }
     // movs : sign extend
     // movz : zero extend
+
+    // load char/short to register: extend them to the size of int where lower half contains the data and upper half may contain garbage
+    // load long: occupies the entire register
     if (ty->size == 1)
-        println("    movsbq (%%rax), %%rax"); // movsb: move one byte and sign extend to 8 bytes
+        println("    movsbl (%%rax), %%eax"); // movsb: move one byte and sign extend to 4 bytes
     else if (ty->size == 2)
-        println("   movswq (%%rax), %%rax");
+        println("   movswl (%%rax), %%eax");
     else if (ty->size == 4)
         println("   movsxd (%%rax), %%rax");
     else

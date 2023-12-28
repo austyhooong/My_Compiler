@@ -134,6 +134,7 @@ struct Node
     Node* inc;
 };
 
+Node* new_cast(Node* expr, Type* ty);
 Obj* parse(Token* tok);
 
 // type.c
