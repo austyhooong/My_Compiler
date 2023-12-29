@@ -15,7 +15,7 @@ void error(char* fmt, ...)
     exit(1);
 }
 
-// reports an error message in the following format and exit
+// reports an error message in the following format
 // ex:
 //  foo.c:10: x = y + 1;
 //                ^ <error message>
@@ -44,7 +44,6 @@ static void verror_at(int line_num, char* loc, char* fmt, va_list ap)
     fprintf(stderr, "^ ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    exit(1);
 }
 
 void error_at(char* loc, char* fmt, ...)
@@ -57,6 +56,7 @@ void error_at(char* loc, char* fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     verror_at(line_num, loc, fmt, ap);
+    exit(1);
 }
 
 void error_tok(Token* tok, char* fmt, ...)
@@ -64,6 +64,7 @@ void error_tok(Token* tok, char* fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     verror_at(tok->line_num, tok->loc, fmt, ap);
+    exit(1);
 }
 
 bool equal(Token* tok, char* op)
